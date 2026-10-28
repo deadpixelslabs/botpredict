@@ -1,0 +1,15 @@
+FROM node:24-slim AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --ignore-scripts --no-audit --no-fund
+COPY . .
+RUN npm run build:worker
+
+FROM node:24-slim
+ENV NODE_ENV=production
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund && npm cache clean --force
+COPY --from=build --chown=node:node /app/dist/worker.cjs ./dist/worker.cjs
+USER node
+CMD ["node", "dist/worker.cjs"]

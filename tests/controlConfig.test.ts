@@ -21,6 +21,12 @@ test('requires explicit server live opt-in and credentials', () => {
 test('never publishes credentials or connection endpoints', () => {
   assert.deepEqual(publicConfig({predictFunApiKey: 'private', memoryFilePath: '/tmp/history', isPaperTrading: true, maxTradeAmount: 1} as any), {isPaperTrading: true, maxTradeAmount: 1});
 });
+test('prototype names cannot become strategy keys or public configuration', () => {
+  for (const key of ['constructor', 'toString', '__proto__']) {
+    assert.throws(() => validateControlConfig(JSON.parse(`{"${key}": true}`)), /Unsupported setting/);
+    assert.deepEqual(publicConfig(JSON.parse(`{"${key}": true}`)), {});
+  }
+});
 test('auth checks and cross-origin protection', () => {
   assert.equal(validControlToken('Bearer abc', 'abc'), true);
   assert.equal(validControlToken('Bearer wrong', 'abc'), false);

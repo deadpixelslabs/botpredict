@@ -1,0 +1,30 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "npm run build",
+  "outputDirectory": "public",
+  "installCommand": "npm ci",
+  "regions": ["hnd1"],
+  "functions": {
+    "api/**/*.ts": { "maxDuration": 30 }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "same-origin" },
+        { "key": "X-Frame-Options", "value": "DENY" }
+      ]
+    }
+  ],
+  "daemons": {
+    "trading": {
+      "root": ".",
+      "entrypoint": "Dockerfile.worker",
+      "instances": { "hnd1": 1 },
+      "resources": { "requests": { "memory": "1Gi" } },
+      "terminationGracePeriodSeconds": 30
+    }
+  }
+}

@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PredictFun Quant · Vercel Dashboard</title>
+<script src="/vendor/chart.umd.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #070b14;
+    --panel: #0d1424;
+    --panel-2: #111a2e;
+    --border: #1c2942;
+    --text: #e5ecf8;
+    --muted: #7d8db0;
+    --green: #10b981;
+    --red: #ef4444;
+    --amber: #f59e0b;
+    --cyan: #22d3ee;
+    --indigo: #6366f1;
+    --grad: linear-gradient(135deg, #6366f1 0%, #22d3ee 100%);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: radial-gradient(1200px 600px at 80% -10%, #101c3a 0%, var(--bg) 55%);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 20px 24px 40px;
+  }
+  /* ── header ── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand .logo {
+    width: 42px; height: 42px; border-radius: 12px; background: var(--grad);
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+    box-shadow: 0 0 24px rgba(99,102,241,.45);
+  }
+  .brand h1 { font-size: 19px; font-weight: 800; letter-spacing: .3px; }
+  .brand small { display: block; color: var(--muted); font-size: 11px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; }
+  .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .badge {
+    padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 700;
+    letter-spacing: .8px; border: 1px solid var(--border); background: var(--panel);
+  }
+  .badge.paper { color: var(--cyan); border-color: rgba(34,211,238,.35); }
+  .badge.live  { color: #fff; background: linear-gradient(135deg,#ef4444,#b91c1c); border: none; animation: pulse 1.6s infinite; }
+  .badge.badge-guard { color: var(--green); border-color: rgba(16,185,129,.35); }
+  .badge.badge-guard.guard-std { color: var(--green); border-color: rgba(16,185,129,.35); }
+  .badge.badge-guard.guard-low { color: var(--amber); border-color: rgba(245,158,11,.4); }
+  .conn { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); font-weight: 600; }
+  .conn .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px var(--green); }
+  .conn.offline .dot { background: var(--red); box-shadow: 0 0 10px var(--red); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
+
+  /* ── stat cards ── */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 16px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+    padding: 16px 18px; position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; inset: 0 0 auto 0; height: 2px;
+    background: var(--grad); opacity: .55;
+  }
+  .card .label { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 8px; }
+  .card .value { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .card .sub { font-size: 11.5px; color: var(--muted); margin-top: 5px; font-weight: 500; }
+  .pos { color: var(--green); } .neg { color: var(--red); } .neu { color: var(--text); }
+  .flash-up { animation: flashG .5s; } .flash-down { animation: flashR .5s; }
+  @keyframes flashG { 0% { color: var(--green); text-shadow: 0 0 14px rgba(16,185,129,.8);} }
+  @keyframes flashR { 0% { color: var(--red); text-shadow: 0 0 14px rgba(239,68,68,.8);} }
+
+  /* ── epoch bar ── */
+  .epoch { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; margin-bottom: 16px; }
+  .epoch .top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .epoch .title { font-size: 12px; color: var(--muted); font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; }
+  .epoch .clock { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; }
+  .track { position: relative; height: 14px; border-radius: 99px; background: var(--panel-2); overflow: hidden; border: 1px solid var(--border); }
+  .zone { position: absolute; top: 0; bottom: 0; }
+  .zone.entry { left: 0.66%; width: 94.3%; background: rgba(16,185,129,.14); }
+  .zone.forceclose { left: 76.6%; width: 3.4%; background: rgba(245,158,11,.28); }
+  .zone.locked { left: 95%; width: 5%; background: rgba(239,68,68,.25); }
+  .fill { position: absolute; top: 0; bottom: 0; left: 0; background: var(--grad); border-radius: 99px; transition: width .9s linear; }
+  .marks { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--muted); margin-top: 6px; font-weight: 600; }
+
+  /* ── grid ── */
+  .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 18px; }
+  .panel h3 { font-size: 12px; color: var(--muted); font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 14px; }
+
+  /* ── odds ── */
+  .odds { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .odd-box { border-radius: 14px; padding: 16px; text-align: center; border: 1px solid var(--border); background: var(--panel-2); }
+  .odd-box .dir { font-size: 12px; font-weight: 800; letter-spacing: 1.5px; }
+  .odd-box .cents { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; margin: 6px 0 2px; }
+  .odd-box .odds-val { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+  .odd-box.up { border-color: rgba(16,185,129,.35); } .odd-box.up .dir, .odd-box.up .cents { color: var(--green); }
+  .odd-box.down { border-color: rgba(239,68,68,.35); } .odd-box.down .dir, .odd-box.down .cents { color: var(--red); }
+
+  /* ── table ── */
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th { text-align: left; color: var(--muted); font-weight: 700; font-size: 10.5px; letter-spacing: 1px; text-transform: uppercase; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  td { padding: 9px 10px; border-bottom: 1px solid rgba(28,41,66,.5); font-variant-numeric: tabular-nums; }
+  tr:hover td { background: rgba(99,102,241,.05); }
+  .pill { padding: 3px 10px; border-radius: 99px; font-size: 10.5px; font-weight: 800; letter-spacing: .5px; }
+  .pill.up { background: rgba(16,185,129,.15); color: var(--green); }
+  .pill.down { background: rgba(239,68,68,.15); color: var(--red); }
+  .pill.win { background: rgba(16,185,129,.18); color: var(--green); }
+  .pill.loss { background: rgba(239,68,68,.18); color: var(--red); }
+  .pill.open { background: rgba(34,211,238,.14); color: var(--cyan); }
+  .pill.pending { background: rgba(245,158,11,.15); color: var(--amber); }
+  .pill.cancelled { background: rgba(125,141,176,.15); color: var(--muted); }
+  .table-wrap { max-height: 420px; overflow-y: auto; }
+
+  /* ── logs ── */
+  .logs {
+    background: #05080f; border: 1px solid var(--border); border-radius: 14px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.75;
+    padding: 14px 16px; height: 300px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;
+  }
+  .logs .ok { color: #34d399; } .logs .err { color: #f87171; } .logs .warn { color: #fbbf24; }
+  .logs .info { color: #67e8f9; } .logs .dim { color: #94a3b8; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #24334f; border-radius: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  canvas { max-height: 280px; }
+  footer { text-align: center; color: var(--muted); font-size: 11px; margin-top: 26px; font-weight: 500; }
+  button, input { font: inherit; }
+  button { cursor: pointer; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .control-button { color: var(--cyan); border: 1px solid var(--border); background: var(--panel-2); border-radius: 10px; padding: 9px 13px; font-size: 12px; font-weight: 700; }
+  .auth-panel { margin-bottom: 16px; display: grid; gap: 12px; }
+  .auth-panel h2 { font-size: 18px; }
+  .auth-panel p, .setup-panel p { color: var(--muted); line-height: 1.6; font-size: 13px; }
+  .auth-form { display: flex; gap: 10px; flex-wrap: wrap; }
+  .auth-form input { min-width: 220px; flex: 1; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+  .setup-panel { margin-bottom: 16px; border-color: rgba(245,158,11,.4); }
+  .setup-panel strong { color: var(--amber); font-size: 13px; }
+  .setup-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .setup-chip { border: 1px solid var(--border); padding: 5px 9px; border-radius: 8px; font-size: 11px; color: var(--muted); }
+  .notice { min-height: 20px; color: var(--amber); font-size: 12px; line-height: 1.5; }
+  .credential-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(250px,1fr)); gap: 14px; }
+  .credential-grid label { display: grid; gap: 7px; font-size: 11px; color: var(--muted); font-weight: 700; letter-spacing: .7px; }
+  .credential-grid input { width: 100%; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 11px; font-family: 'JetBrains Mono',monospace; font-size: 12px; }
+  .credential-actions { margin-top: 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .credential-panel p { color: var(--muted); font-size: 12px; line-height: 1.7; margin: 10px 0; }
+  .badge.waiting { color: var(--amber); border-color: rgba(245,158,11,.4); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<section id="operatorGate" class="panel auth-panel" aria-labelledby="operatorTitle">
+  <h2 id="operatorTitle">Masuk sebagai operator</h2>
+  <p>Masukkan <code>BOT_CONTROL_TOKEN</code> dari Vercel Environment Variables untuk membaca data bot dan mengirim kontrol. Token disimpan di memori tab ini saja.</p>
+  <form id="operatorForm" class="auth-form">
+    <input id="operatorToken" type="password" minlength="24" autocomplete="off" aria-label="Token operator" placeholder="Token operator (minimal 24 karakter)" required />
+    <button id="loginButton" class="control-button" type="submit">Buka dashboard</button>
+  </form>
+  <div id="loginMessage" class="notice" role="status"></div>
+</section>
+<section id="setupPanel" class="panel setup-panel" aria-live="polite">
+  <strong id="setupTitle">Memeriksa konfigurasi cloud…</strong>
+  <p id="setupMessage">Dashboard tidak menjalankan engine. Engine berjalan terpisah pada Vercel Daemon dan menerbitkan snapshot.</p>
+  <div class="setup-chips"><span class="setup-chip" id="storageChip">Storage: —</span><span class="setup-chip" id="operatorChip">Operator: —</span><span class="setup-chip" id="apiChip">Predict API: —</span><span class="setup-chip" id="workerChip">Daemon: —</span></div>
+  <div id="commandMessage" class="notice" role="status"></div>
+</section>
+
+<section id="credentialsPanel" class="panel credential-panel" style="margin-bottom:16px" hidden>
+  <h3>Setup Predict.fun</h3>
+  <p>Isi kredensial baru untuk koneksi akun. Key dienkripsi di server sebelum disimpan dan tidak dikembalikan ke browser. Menyimpan ulang akan mem-pause entry; posisi live harus diselesaikan sebelum mengganti akun.</p>
+  <form id="credentialsForm" autocomplete="off">
+    <div class="credential-grid">
+      <label>PREDICT_FUN_API_KEY<input id="predictApiKey" name="predict-api-secret" type="password" autocomplete="off" minlength="8" maxlength="1024" placeholder="API key baru" disabled required /></label>
+      <label>WALLET_PRIVATE_KEY<input id="walletPrivateKey" name="wallet-signing-secret" type="password" autocomplete="off" minlength="64" maxlength="66" placeholder="Private key signer / Privy" disabled required /></label>
+      <label>PREDICT_ACCOUNT_ADDRESS<input id="predictAccountAddress" name="predict-account-address" type="text" autocomplete="off" maxlength="42" placeholder="0x… deposit address; kosong untuk EOA" disabled /></label>
+    </div>
+    <div class="credential-actions"><button id="saveCredentialsButton" class="control-button" type="submit" disabled>Simpan kredensial</button><button id="startLiveButton" class="control-button" type="button" onclick="startLive()" disabled>Aktifkan LIVE</button><span id="credentialStatus" class="notice">Status kredensial belum tersedia.</span></div>
+  </form>
+  <p id="accountStatus">Belum ada akun terverifikasi.</p>
+  <p>Aktivasi live memerlukan <code>ENABLE_LIVE_TRADING=true</code> pada server. Status <strong>LIVE ONLINE</strong> baru ditampilkan setelah autentikasi Predict, heartbeat daemon, quote, dan saldo terbukti siap. Order tetap harus terisi untuk menjadi transaksi.</p>
+</section>
+
+<header>
+  <div class="brand">
+    <div class="logo">⚡</div>
+    <div>
+      <h1>PredictFun Quant</h1>
+      <small>BTC UP/DOWN 5M · Vercel Daemon</small>
+    </div>
+  </div>
+  <div class="header-right">
+    <span id="guardBadge" class="badge badge-guard guard-std">🛡 GUARD 30–60¢</span>
+    <button id="modeBadge" class="badge paper" style="cursor:pointer;outline:none;" onclick="toggleMode()" disabled>📝 PAPER TRADING</button>
+    <button id="runButton" class="control-button" onclick="toggleAutoTrade()" disabled>Mulai paper</button>
+    <button id="logoutButton" class="control-button" onclick="lockDashboard()" hidden>Kunci</button>
+    <span id="conn" class="conn"><span class="dot"></span><span id="connText">BELUM TERHUBUNG</span></span>
+  </div>
+</header>
+
+<section class="stats">
+  <div class="card"><div class="label">BTC / USDT (Binance Spot)</div><div class="value neu" id="btcPrice">—</div><div class="sub" id="btcSub">snapshot Binance Spot</div></div>
+  <div class="card"><div class="label">Daily PnL (estimasi)</div><div class="value" id="dailyPnl">—</div><div class="sub" id="dailySub">mode aktif · tanggal UTC</div></div>
+  <div class="card"><div class="label">Total PnL (estimasi)</div><div class="value" id="totalPnl">—</div><div class="sub" id="totalSub">mode aktif · trade selesai</div></div>
+  <div class="card"><div class="label">Win Rate</div><div class="value neu" id="winRate">—</div><div class="sub" id="wlSub">W 0 · L 0</div></div>
+  <div class="card"><div class="label">Wallet USDT</div><div class="value neu" id="wallet">—</div><div id="walletSub" class="sub">saldo belum diverifikasi</div></div>
+  <div class="card"><div class="label">Aktivitas</div><div class="value neu" id="activity">—</div><div class="sub" id="activitySub">trades/jam · posisi aktif</div></div>
+</section>
+
+<section class="epoch">
+  <div class="top">
+    <span class="title">⏱ Epoch 5 Menit · Trading Window</span>
+    <span class="clock" id="epochClock">—</span>
+  </div>
+  <div class="track">
+    <div class="zone entry"></div>
+    <div class="zone forceclose"></div>
+    <div class="zone locked"></div>
+    <div class="fill" id="epochFill" style="width:0%"></div>
+  </div>
+  <div class="marks">
+    <span>0s · start</span><span>2s · entry open</span><span>230s · exit attempt</span><span>230–300s · entry locked</span><span>300s</span>
+  </div>
+</section>
+
+<section class="grid">
+  <div class="panel">
+    <h3>📈 PnL 100 trade terakhir</h3>
+    <canvas id="pnlChart"></canvas>
+  </div>
+  <div>
+    <div class="panel" style="margin-bottom:16px">
+      <h3>🎯 Predict.fun Live Odds</h3>
+      <div class="odds">
+        <div class="odd-box up"><div class="dir">▲ UP</div><div class="cents" id="upCents">—</div><div class="odds-val" id="upOdds">odds —</div></div>
+        <div class="odd-box down"><div class="dir">▼ DOWN</div><div class="cents" id="downCents">—</div><div class="odds-val" id="downOdds">odds —</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>🏆 Win / Loss 100 trade terakhir</h3>
+      <canvas id="wlChart" style="max-height:190px"></canvas>
+    </div>
+  </div>
+</section>
+
+<section class="panel" style="margin-bottom:16px">
+  <h3>📋 Riwayat Trade (100 terakhir)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Waktu</th><th>Arah</th><th>Stake</th><th>Entry</th><th>Exit</th><th>PnL</th><th>Status</th><th>Alasan Sinyal</th>
+      </tr></thead>
+      <tbody id="tradesBody"><tr><td colspan="8" style="color:var(--muted);text-align:center;padding:24px">Belum ada trade…</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <h3>🖥 Live Engine Logs</h3>
+  <div class="logs" id="logs">Menunggu log dari engine…</div>
+</section>
+
+<footer>PredictFun Latency-Arb Quant Bot · mode terpisah · PnL estimasi · snapshot daemon 2s · pemeriksaan status 1s</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+let controlToken = '', latestConfig = null, latestStats = null, pendingCommandId = null;
+let lastBtc = 0, autoScrollLogs = true, chartPnl = null, chartWl = null, statsBusy = false, tradesBusy = false, loginBusy = false, credentialsBusy = false;
+const escapeHtml = value => String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const money = value => typeof value !== 'number' || !Number.isFinite(value) ? '—' : (value > 0 ? '+' : value < 0 ? '−' : '') + '$' + Math.abs(value).toFixed(2);
+const cls = value => value > 0 ? 'pos' : value < 0 ? 'neg' : 'neu';
+function notice(message) { $('commandMessage').textContent = message; }
+
+async function api(path, options = {}) {
+  const issuedToken = controlToken;
+  const {timeoutMs = 8000,...fetchOptions} = options;
+  const response = await fetch(path, {...fetchOptions, cache:'no-store', signal:AbortSignal.timeout(timeoutMs), headers:{...(options.body ? {'Content-Type':'application/json'} : {}),...(issuedToken ? {'Authorization':'Bearer '+issuedToken} : {}),...options.headers}});
+  const body = await response.json().catch(() => ({}));
+  if (issuedToken !== controlToken) throw new Error('Sesi operator sudah berubah.');
+  if (response.status === 401) { lockDashboard(); $('loginMessage').textContent = 'Token tidak valid atau sudah diganti.'; }
+  if (!response.ok) throw new Error(body.error || 'Layanan cloud belum tersedia.');
+  return body;
+}
+function setConnected(ok, text) { $('conn').classList.toggle('offline', !ok); $('connText').textContent = text; }
+function updateHealth(flags) {
+  $('storageChip').textContent = 'Storage: ' + (flags.storageConfigured ? 'terhubung' : 'belum terhubung');
+  $('operatorChip').textContent = 'Operator: ' + (flags.operatorConfigured ? 'siap' : 'token belum diisi');
+  $('apiChip').textContent = 'Predict API: ' + (flags.predictApiConfigured ? 'key tersedia' : flags.credentialsStatusAvailable ? 'key belum diisi' : 'lihat setelah login');
+  $('setupTitle').textContent = !flags.operatorConfigured ? 'Konfigurasi operator diperlukan' : !flags.storageConfigured ? 'Hubungkan private Blob store' : !flags.predictApiConfigured && flags.credentialsStatusAvailable ? 'API key Predict baru diperlukan' : 'Konfigurasi server tersedia';
+  $('setupMessage').textContent = !flags.operatorConfigured ? 'Tambahkan BOT_CONTROL_TOKEN acak minimal 24 karakter di Vercel Environment Variables lalu deploy ulang.' : !flags.storageConfigured ? 'Hubungkan private Vercel Blob store ke proyek dan deploy ulang. Jangan menyimpan ledger pada filesystem Function.' : !flags.predictApiConfigured && flags.credentialsStatusAvailable ? 'Isi API key baru pada menu Setup Predict.fun. Status autentikasi baru valid setelah daemon memeriksanya.' : 'Daemon menerbitkan snapshot. Status berjalan baru valid setelah heartbeat daemon diterima; tidak ada data demo.';
+  $('loginButton').disabled = !flags.operatorConfigured || !flags.storageConfigured || loginBusy;
+}
+async function health() { try { updateHealth(await api('/api/health')); } catch { $('setupTitle').textContent = 'Endpoint cloud belum tersedia'; $('setupMessage').textContent = 'Pastikan deployment API sudah selesai. Dashboard statis saja tidak menjalankan bot.'; } }
+
+$('operatorForm').addEventListener('submit', async event => {
+  event.preventDefault(); if (loginBusy) return; loginBusy = true;
+  controlToken = $('operatorToken').value.trim(); $('loginButton').disabled = true; $('loginMessage').textContent = 'Memverifikasi operator…';
+  try {
+    latestConfig = await api('/api/config');
+    $('operatorToken').value = ''; $('operatorGate').hidden = true; $('logoutButton').hidden = false; $('credentialsPanel').hidden = false; $('saveCredentialsButton').disabled = credentialsBusy; for (const id of ['predictApiKey','walletPrivateKey','predictAccountAddress']) $(id).disabled = credentialsBusy; updateCredentialStatus(latestConfig); $('loginMessage').textContent = '';
+    await refresh();
+  } catch(error) { controlToken = ''; latestConfig = null; $('loginMessage').textContent = error.message; }
+  finally { loginBusy = false; $('loginButton').disabled = false; }
+});
+function lockDashboard() {
+  controlToken = ''; latestConfig = latestStats = null; pendingCommandId = null; lastBtc = 0;
+  clearCredentialInputs(true); for (const id of ['predictApiKey','walletPrivateKey','predictAccountAddress']) $(id).disabled = true; $('credentialsPanel').hidden = true; $('saveCredentialsButton').disabled = $('startLiveButton').disabled = true; $('credentialStatus').textContent = 'Status kredensial belum tersedia.'; $('accountStatus').textContent = 'Belum ada akun terverifikasi.';
+  $('operatorToken').value = ''; $('operatorGate').hidden = false; $('logoutButton').hidden = true; $('modeBadge').disabled = $('runButton').disabled = true;
+  for (const id of ['btcPrice','dailyPnl','totalPnl','winRate','wallet','activity','upCents','downCents']) $(id).textContent = '—';
+  $('wlSub').textContent = 'W — · L —'; $('activitySub').textContent = 'snapshot belum tersedia'; $('logs').textContent = 'Dashboard terkunci.';
+  $('tradesBody').innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Masuk untuk membaca riwayat bot.</td></tr>';
+  $('workerChip').textContent = 'Daemon: —'; $('commandMessage').textContent = ''; setConnected(false,'TERKUNCI');
+  if (chartPnl) { chartPnl.data.labels = []; chartPnl.data.datasets[0].data = []; chartPnl.update('none'); }
+  if (chartWl) { chartWl.data.datasets[0].data = [0,0]; chartWl.update('none'); }
+}
+function updateControls(commands = []) {
+  const pending = commands.some(command => command.status === 'pending');
+  if (pendingCommandId) {
+    const command = commands.find(item => item.id === pendingCommandId);
+    if (command && command.status !== 'pending') { notice(command.status === 'applied' ? 'Perintah diterapkan oleh daemon.' : (command.error || 'Daemon menolak perintah.')); pendingCommandId = null; }
+    else notice('Perintah tersimpan; menunggu konfirmasi daemon.');
+  }
+  $('modeBadge').disabled = !controlToken || pending;
+  $('runButton').disabled = !controlToken || pending || (!latestConfig?.enableAutoTrade && (!latestStats?.workerAvailable || !latestConfig?.predictApiConfigured));
+  $('runButton').textContent = latestConfig?.enableAutoTrade ? 'Pause entry' : latestConfig?.isPaperTrading === false ? 'Mulai live' : 'Mulai paper';
+  $('saveCredentialsButton').disabled = !controlToken || credentialsBusy || Boolean(latestStats?.isPaperTrading === false && latestStats?.activeTrades);
+  $('startLiveButton').disabled = !controlToken || credentialsBusy || pending || !latestConfig?.liveTradingEnabled || !latestConfig?.predictApiConfigured || !latestConfig?.walletConfigured || latestConfig?.credentialValidation !== 'format_valid' || !latestStats?.workerAvailable || latestStats?.reconciliationRequired;
+
+}
+async function queueConfig(changes) {
+  $('modeBadge').disabled = $('runButton').disabled = true;
+  try { const result = await api('/api/config',{method:'POST',body:JSON.stringify(changes)}); pendingCommandId = result.commandId; notice('Perintah tersimpan; menunggu konfirmasi daemon.'); await refresh(); }
+  catch(error) { notice(error.message); updateControls(latestConfig?.commands || []); }
+}
+async function toggleMode() {
+  if (!latestConfig) return;
+  if (latestConfig.isPaperTrading !== false && !latestConfig.liveTradingEnabled) { notice('Live belum diaktifkan di Vercel Environment Variables. Tetap gunakan paper untuk evaluasi.'); return; }
+  await queueConfig({isPaperTrading:latestConfig.isPaperTrading === false});
+}
+async function toggleAutoTrade() { if (latestConfig) await queueConfig({enableAutoTrade:!latestConfig.enableAutoTrade}); }
+function clearCredentialInputs(all = false) { $('predictApiKey').value = ''; $('walletPrivateKey').value = ''; if (all) $('predictAccountAddress').value = ''; }
+function updateCredentialStatus(info) {
+  const state = info.credentialValidation;
+  $('credentialStatus').textContent = state === 'unreadable' ? 'Kredensial tidak dapat dibuka; isi ulang setelah memeriksa kunci enkripsi server.' : state === 'format_valid' ? (info.predictAuthenticated ? 'Autentikasi Predict terverifikasi · revisi '+info.credentialRevision : 'Kredensial tersedia · revisi '+info.credentialRevision+' · menunggu autentikasi daemon') : 'Isi tiga kolom untuk setup live; account boleh kosong untuk EOA.';
+  $('accountStatus').textContent = info.walletAddress ? (info.predictAuthenticated ? 'Akun Predict terautentikasi: ' : 'Alamat akun setup: ')+info.walletAddress : 'Belum ada alamat akun dari kredensial yang valid.';
+}
+$('credentialsForm').addEventListener('submit', async event => {
+  event.preventDefault(); if (!controlToken || credentialsBusy) return; credentialsBusy = true; $('saveCredentialsButton').disabled = true; for (const id of ['predictApiKey','walletPrivateKey','predictAccountAddress']) $(id).disabled = true;
+  const payload = {PREDICT_FUN_API_KEY:$('predictApiKey').value.trim(),WALLET_PRIVATE_KEY:$('walletPrivateKey').value.trim(),PREDICT_ACCOUNT_ADDRESS:$('predictAccountAddress').value.trim()};
+  $('credentialStatus').textContent = 'Menyimpan terenkripsi…';
+  try {
+    const result = await api('/api/credentials',{method:'POST',body:JSON.stringify(payload),timeoutMs:25000});
+    if (!controlToken) return;
+    clearCredentialInputs(); pendingCommandId = null; latestConfig = {...latestConfig,...result,enableAutoTrade:false}; updateCredentialStatus(result);
+    notice('Kredensial tersimpan terenkripsi. Entry di-pause; tunggu daemon memuat revisi baru sebelum mengaktifkan LIVE.');
+    await refresh();
+  } catch(error) { if (controlToken) { $('credentialStatus').textContent = 'Penyimpanan belum terkonfirmasi.'; notice(error.message+' Periksa status sebelum mengulang.'); } }
+  finally { clearCredentialInputs(); credentialsBusy = false; for (const id of ['predictApiKey','walletPrivateKey','predictAccountAddress']) $(id).disabled = !controlToken; updateControls(latestConfig?.commands || []); }
+});
+async function startLive() {
+  if (!latestConfig?.liveTradingEnabled) { notice('Set ENABLE_LIVE_TRADING=true pada server sebelum aktivasi live.'); return; }
+  if (!latestConfig?.walletConfigured || !latestConfig?.predictApiConfigured || latestConfig?.credentialValidation !== 'format_valid') { notice('Simpan kredensial yang valid terlebih dahulu.'); return; }
+  if (!latestStats?.workerAvailable) { notice('Tunggu heartbeat daemon sebelum mengaktifkan live.'); return; }
+  await queueConfig({isPaperTrading:false,enableAutoTrade:true});
+}
+
+
+$('logs').addEventListener('scroll', () => { const el = $('logs'); autoScrollLogs = el.scrollTop + el.clientHeight >= el.scrollHeight - 30; });
+function colorizeLog(line) { const text = escapeHtml(line); const className = /❌|⛔|🛑/.test(text) ? 'err' : /⚠️|⏳/.test(text) ? 'warn' : /✅|🎯|🏆/.test(text) ? 'ok' : 'dim'; return `<span class="${className}">${text}</span>`; }
+function initCharts() {
+  if (typeof Chart === 'undefined') return;
+  Chart.defaults.color = '#7d8db0'; Chart.defaults.font.family = 'Inter';
+  chartPnl = new Chart($('pnlChart'), {type:'line',data:{labels:[],datasets:[{label:'PnL estimasi (USDT)',data:[],borderColor:'#22d3ee',borderWidth:2,pointRadius:0,tension:.2}]},options:{responsive:true,animation:false,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:8}},y:{}}}});
+  chartWl = new Chart($('wlChart'), {type:'doughnut',data:{labels:['Win','Loss'],datasets:[{data:[0,0],backgroundColor:['#10b981','#ef4444'],borderWidth:0}]},options:{responsive:true,animation:false,cutout:'68%',plugins:{legend:{position:'bottom'}}}});
+}
+async function pollStats() {
+  if (!controlToken || statsBusy) return; statsBusy = true;
+  try {
+    const stats = await api('/api/stats'); latestStats = stats;
+    latestConfig = {...latestConfig,...stats}; updateHealth(stats);
+    $('workerChip').textContent = 'Daemon: ' + (stats.workerAvailable ? stats.workerPhase : 'offline');
+    const p = stats.currentPrice;
+    $('btcPrice').textContent = typeof p === 'number' && p > 0 ? '$'+p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+    if (lastBtc && p && p !== lastBtc) { $('btcPrice').classList.remove('flash-up','flash-down'); void $('btcPrice').offsetWidth; $('btcPrice').classList.add(p > lastBtc ? 'flash-up' : 'flash-down'); } lastBtc = p || 0;
+    $('dailyPnl').textContent = money(stats.dailyPnl); $('dailyPnl').className = 'value '+cls(stats.dailyPnl);
+    $('totalPnl').textContent = money(stats.totalPnl); $('totalPnl').className = 'value '+cls(stats.totalPnl);
+    $('winRate').textContent = stats.winRate === null ? '—' : stats.winRate+'%';
+    $('wlSub').textContent = `W ${stats.wins} · L ${stats.losses} · total ${stats.totalTrades}`;
+    $('wallet').textContent = typeof stats.walletBalanceUsdt === 'number' ? '$'+stats.walletBalanceUsdt.toFixed(2) : '—';
+    $('activity').textContent = stats.tradesThisHour+'/jam'; $('activitySub').textContent = 'posisi aktif: '+stats.activeTrades;
+    $('modeBadge').textContent = stats.isPaperTrading ? '📝 PAPER TRADING' : stats.liveOnline ? '🔴 LIVE ONLINE' : 'LIVE · NOT READY'; $('modeBadge').className = stats.isPaperTrading ? 'badge paper' : stats.liveOnline ? 'badge live' : 'badge waiting';
+    const live = stats.isPaperTrading ? stats.workerAvailable && stats.workerPhase === 'running' : stats.liveOnline;
+    const label = !stats.workerAvailable ? 'DAEMON OFFLINE' : stats.storageHealthy === false ? 'LEDGER ERROR' : stats.reconciliationRequired ? 'RECONCILE ORDER' : stats.workerPhase === 'waiting_for_auth' ? 'AUTENTIKASI BELUM SIAP' : !stats.isPaperTrading && !stats.liveOnline ? 'LIVE BELUM SIAP' : stats.workerPhase === 'waiting_for_api_key' ? 'API KEY DIPERLUKAN' : stats.workerPhase === 'paused' ? 'ENTRY PAUSED' : stats.lastPredictOdds ? (stats.quoteSource || 'VENUE')+' SNAPSHOT' : 'QUOTE BELUM TERSEDIA';
+    setConnected(live,label); $('btcSub').textContent = stats.workerHeartbeatAt ? 'snapshot '+new Date(stats.workerHeartbeatAt).toLocaleTimeString('id-ID') : 'belum ada snapshot daemon';
+    $('setupTitle').textContent = !stats.workerAvailable ? 'Daemon belum memberikan heartbeat' : !stats.predictApiConfigured ? 'API key Predict baru diperlukan' : stats.tradingActive ? 'Entry otomatis aktif' : 'Entry otomatis belum aktif';
+    $('setupMessage').textContent = stats.workerMessage || 'Dashboard menampilkan snapshot daemon; hasil model dan profit belum tervalidasi.';
+    const second = stats.epochSecond; $('epochFill').style.width = ((second/300)*100).toFixed(2)+'%'; $('epochClock').textContent = `${Math.floor(second/60)}:${String(second%60).padStart(2,'0')} / 5:00`;
+    if (stats.lastPredictOdds) { const odds = stats.lastPredictOdds; $('upCents').textContent = (100/odds.upOdds).toFixed(1)+'¢'; $('downCents').textContent = (100/odds.downOdds).toFixed(1)+'¢'; $('upOdds').textContent = 'odds '+odds.upOdds.toFixed(2); $('downOdds').textContent = 'odds '+odds.downOdds.toFixed(2); }
+    else { $('upCents').textContent = $('downCents').textContent = '—'; $('upOdds').textContent = $('downOdds').textContent = 'belum ada quote segar'; }
+    $('logs').innerHTML = stats.logs.length ? stats.logs.map(colorizeLog).join('\n') : escapeHtml(stats.workerMessage || 'Belum ada log daemon.'); if (autoScrollLogs) $('logs').scrollTop = $('logs').scrollHeight;
+    $('walletSub').textContent = stats.walletBalanceFresh && stats.walletBalanceObservedAt ? 'saldo diverifikasi '+new Date(stats.walletBalanceObservedAt).toLocaleTimeString('id-ID') : 'saldo belum diverifikasi';
+    updateCredentialStatus(stats);
+    updateControls(stats.commands || []);
+  } catch(error) { setConnected(false,'SNAPSHOT TIDAK TERSEDIA'); notice(error.message); $('modeBadge').disabled = $('runButton').disabled = true; }
+  finally { statsBusy = false; }
+}
+function tradeStatus(t) { return t.submissionUncertain || t.reconciliationRequired ? ['RECONCILE','pending'] : t.outcome === 'WIN' ? ['WIN','win'] : t.outcome === 'LOSS' ? ['LOSS','loss'] : t.isCancelled ? ['CANCELLED','cancelled'] : t.isSold ? ['SOLD','open'] : t.isFilled === false ? ['PENDING','pending'] : ['OPEN','open']; }
+async function pollTrades() {
+  if (!controlToken || tradesBusy) return; tradesBusy = true;
+  try {
+    const trades = await api('/api/trades');
+    $('tradesBody').innerHTML = trades.length ? trades.map(t => {
+      const [status,className] = tradeStatus(t); const entry = typeof t.entryOdds === 'number' && t.entryOdds > 0 ? (100/t.entryOdds).toFixed(1)+'¢' : '—'; const exit = typeof t.sellPrice === 'number' ? (t.sellPrice*100).toFixed(1)+'¢' : '—';
+      return `<tr><td>${escapeHtml(new Date(t.timestamp).toLocaleTimeString('id-ID'))}</td><td><span class="pill ${t.direction === 'UP' ? 'up' : 'down'}">${t.direction === 'UP' ? '▲ UP' : '▼ DOWN'}</span></td><td>${typeof t.amount === 'number' ? '$'+t.amount.toFixed(2) : '—'}</td><td>${entry}</td><td>${exit}</td><td class="${cls(t.pnl)}">${money(t.pnl)}</td><td><span class="pill ${className}">${status}</span></td><td style="color:var(--muted);max-width:260px;overflow:hidden;text-overflow:ellipsis">${escapeHtml((t.signal?.reason || '').slice(0,90))}</td></tr>`;
+    }).join('') : '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Belum ada trade pada mode ini.</td></tr>';
+    if (chartPnl) { let cumulative = 0; const rows = trades.filter(t => t.resolved && typeof t.pnl === 'number').sort((a,b) => (a.resolvedAt || a.timestamp)-(b.resolvedAt || b.timestamp)); chartPnl.data.labels = rows.map(t => new Date(t.resolvedAt || t.timestamp).toLocaleTimeString('id-ID')); chartPnl.data.datasets[0].data = rows.map(t => cumulative += t.pnl); chartPnl.update('none'); }
+    if (chartWl) { chartWl.data.datasets[0].data = [trades.filter(t=>t.outcome==='WIN').length,trades.filter(t=>t.outcome==='LOSS').length]; chartWl.update('none'); }
+  } catch(error) { notice(error.message); }
+  finally { tradesBusy = false; }
+}
+async function refresh() { await pollStats(); await pollTrades(); }
+initCharts(); lockDashboard(); health();
+setInterval(() => { if (controlToken) pollStats(); },1000);
+setInterval(() => { if (controlToken) pollTrades(); },5000);
+setInterval(() => { if (!controlToken) health(); },10000);
+</script>
+</body>
+</html>

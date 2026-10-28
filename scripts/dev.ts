@@ -1,0 +1,10 @@
+import 'dotenv/config';
+import express from 'express';
+import path from 'node:path';
+import app from '../api/[...route]';
+app.use(express.static(path.join(process.cwd(), 'public')));
+app.get('/', (_req, res) => res.sendFile(path.join(process.cwd(), 'public/dashboard.html')));
+const port = Number(process.env.PORT || 3000);
+const server = app.listen(port, '127.0.0.1', () => console.log(`Dashboard: http://127.0.0.1:${port}`));
+process.once('SIGTERM', () => server.close());
+process.once('SIGINT', () => server.close());

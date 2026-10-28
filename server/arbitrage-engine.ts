@@ -87,6 +87,9 @@ export interface ArbitrageTrade {
   resolved?: boolean;      // true if resolution done
   
   mode?: 'paper' | 'live' | 'unknown';
+  /** Public identity binding prevents a replacement signer from inheriting old live risk. */
+  executionAccount?: string;
+  signerAddress?: string;
   resolvedAt?: number;
   orderId?: string;
   orderExpiration?: number;
@@ -128,6 +131,14 @@ export interface ArbitrageTrade {
   sellOrderTimestamp?: number;  // When the sell order was placed
   isCheckingSellFill?: boolean; // To avoid concurrent status checking for sell orders
   lastSellAttemptTime?: number; // Timing of last sell attempt for cooldown on retries
+}
+
+/** A daemon supplies durable storage and a lease fence; local use keeps file persistence. */
+export interface EngineRuntimeOptions {
+  loadTrades?: () => Promise<ArbitrageTrade[]>;
+  saveTrades?: (trades: ArbitrageTrade[]) => Promise<void>;
+  beforeSubmit?: (action?: 'BUY' | 'SELL') => Promise<void>;
+  canExecute?: () => boolean;
 }
 
 export interface ArbitrageConfig {
@@ -258,6 +269,8 @@ export class PredictFunArbitrageEngine {
   private maintenanceIntervals: NodeJS.Timeout[] = [];
   private historyLoad: Promise<void>;
   private storageHealthy = true;
+  private persistenceQueue: Promise<void> = Promise.resolve();
+  private stopPromise: Promise<void> | null = null;
   private lastUpBid: number = 0;
   private lastDownBid: number = 0;
   private lastRealUpBid: number = 0;   // cache of last genuine bestBid.price from API (avoids -0.03 estimate jumps)
@@ -276,16 +289,20 @@ export class PredictFunArbitrageEngine {
   private lastPortfolioSyncTime: number = 0;
   
   private static instanceCount = 0;
-  constructor(config: Partial<ArbitrageConfig> = {}) {
+  constructor(config: Partial<ArbitrageConfig> = {}, private readonly runtime: EngineRuntimeOptions = {}) {
+    if (!!runtime.loadTrades !== !!runtime.saveTrades) throw new Error('Cloud persistence requires both loadTrades and saveTrades');
     PredictFunArbitrageEngine.instanceCount++;
     console.log(`--- ArbitrageEngine instantiated, count: ${PredictFunArbitrageEngine.instanceCount} ---`);
-    const saved = publicConfig(getSystemConfig());
+    const saved = runtime.loadTrades ? {} : publicConfig(getSystemConfig());
     const safeSaved: Partial<ArbitrageConfig> = {};
     // Ignore malformed legacy fields individually; never let persisted secrets configure execution.
     for (const [key, value] of Object.entries(saved)) {
       try { Object.assign(safeSaved, validateControlConfig({ [key]: value })); } catch { /* use safe default */ }
     }
     this.cfg = { ...DEFAULT_ARB_CONFIG, ...safeSaved, ...config };
+    // Environment credentials are replaced by the daemon on revision changes.
+    // Never reuse the key captured by DEFAULT_ARB_CONFIG at module import time.
+    this.cfg.predictFunApiKey = process.env.PREDICT_FUN_API_KEY || config.predictFunApiKey || '';
     this.cfg.isPaperTrading = this.cfg.isPaperTrading || process.env.ENABLE_LIVE_TRADING !== 'true';
     const limits: Record<string, [number, number]> = { minPriceMovePct: [0.001, 5], minConfidence: [0.1, 1], minEdge: [0.001, 0.5], maxTradeAmount: [0.01, 10000], maxTradesPerHour: [1, 1000], maxDailyLoss: [0.01, 100000], cooldownMs: [100, 3600000], predictSyncIntervalMs: [1000, 30000], executionSlippage: [0, 0.02] };
     for (const [key, [min, max]] of Object.entries(limits)) {
@@ -330,15 +347,21 @@ export class PredictFunArbitrageEngine {
   // ─────────────────────────────────────────────────────────────────────────
   // START ENGINE
   // ─────────────────────────────────────────────────────────────────────────
-  public async start(): Promise<void> {
-    if ((this as any).isRunning) return;
+  public async ready(): Promise<void> {
     await this.historyLoad;
+    if (!this.storageHealthy) throw new Error('Trade ledger is not healthy; engine startup blocked');
+  }
+
+  public async start(): Promise<void> {
+    if (this.stopPromise) { await this.stopPromise; this.stopPromise = null; }
+    if ((this as any).isRunning) return;
+    await this.ready();
     (this as any).isRunning = true;
     this.log('🚀 Starting arbitrage engine...');
     
     // Background pre-warm the Predict.fun API client to warm up cache for zero-latency first execution
     const privateKey = getSystemConfig()?.walletPrivateKey || process.env.WALLET_PRIVATE_KEY || '';
-    const apiKey = this.cfg.predictFunApiKey || process.env.PREDICT_FUN_API_KEY || '';
+    const apiKey = process.env.PREDICT_FUN_API_KEY || this.cfg.predictFunApiKey || '';
     const predictAccount = getSystemConfig()?.smartWalletAddress || '';
     if (!this.cfg.isPaperTrading && privateKey && apiKey) {
       preWarmPredictClient(privateKey, predictAccount, apiKey).catch((e) => {
@@ -417,7 +440,12 @@ export class PredictFunArbitrageEngine {
     }
   }
 
-  public async stop(): Promise<void> {
+  public stop(): Promise<void> {
+    if (!this.stopPromise) this.stopPromise = this.stopAndDrain();
+    return this.stopPromise;
+  }
+
+  private async stopAndDrain(): Promise<void> {
     (this as any).isRunning = false;
     this.maintenanceIntervals.forEach(clearInterval);
     this.maintenanceIntervals = [];
@@ -462,6 +490,22 @@ export class PredictFunArbitrageEngine {
       clearInterval(this.balanceCheckInterval);
       this.balanceCheckInterval = null;
     }
+    // Credential replacement can recreate an engine under the same worker lease.
+    // Wait until all callbacks that may mutate/save the old ledger have finished.
+    // A failed drain must stop the worker, never allow old and new ledgers to race.
+    const deadline = performance.now() + 20000;
+    while (this.isExecutingTrade || this.fastLoopBusy || this.isResolving || this.isSyncingPredictOdds || this.portfolioSyncBusy || this.balanceSyncBusy) {
+      if (performance.now() >= deadline) throw new Error('Engine callbacks did not drain; restart the worker before replacing credentials');
+      await new Promise(resolve => setTimeout(resolve, 25));
+    }
+    const remaining = Math.max(1, deadline - performance.now());
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        this.persistenceQueue,
+        new Promise<never>((_resolve, reject) => { timeout = setTimeout(() => reject(new Error('Ledger writes did not drain; restart the worker before replacing credentials')), remaining); }),
+      ]);
+    } finally { if (timeout) clearTimeout(timeout); }
     await this.saveTrades();
     this.log('✅ Engine stopped');
   }
@@ -516,7 +560,7 @@ export class PredictFunArbitrageEngine {
   // SYNC PREDICT.FUN ODDS (REAL-TIME)
   // ─────────────────────────────────────────────────────────────────────────
   private async syncPredictOdds(): Promise<void> {
-    const apiKey = this.cfg.predictFunApiKey || process.env.PREDICT_FUN_API_KEY || '';
+    const apiKey = process.env.PREDICT_FUN_API_KEY || this.cfg.predictFunApiKey || '';
     const epoch = Math.floor(Date.now() / 300000) * 300;
     const headers = apiKey ? { 'x-api-key': apiKey } : {};
     try {
@@ -616,12 +660,36 @@ export class PredictFunArbitrageEngine {
     return true;
   }
 
+  private executionAllowed(): boolean {
+    try { return this.runtime.canExecute ? this.runtime.canExecute() === true : true; }
+    catch { return false; }
+  }
+
+  private async beforeLiveSubmit(action: 'BUY' | 'SELL' = 'BUY', targetEpoch?: number, signalAt?: number): Promise<void> {
+    if (!(this as any).isRunning || !this.storageHealthy || !this.executionAllowed()) throw new Error('Execution lease is not valid or engine stopped');
+    if (action === 'BUY' && !this.cfg.enableAutoTrade) throw new Error('New entries are paused');
+    await this.runtime.beforeSubmit?.(action);
+    if (!(this as any).isRunning || !this.storageHealthy || !this.executionAllowed()) throw new Error('Execution lease expired or engine stopped before submission');
+    if (action === 'BUY' && !this.cfg.enableAutoTrade) throw new Error('New entries were paused before submission');
+    // Durable storage and authentication add awaits. Re-check venue state after
+    // those awaits so a fresh lease cannot accidentally authorize an old signal.
+    if (targetEpoch !== undefined) {
+      const now = Date.now();
+      const epoch = Math.floor(now / 300000) * 300;
+      const quoteAge = this.lastPredictOdds ? now - this.lastPredictOdds.timestamp : Infinity;
+      if (epoch !== targetEpoch || this.predictMarketDetails?.epoch !== epoch || this.predictMarketDetails.market.tradingStatus !== 'OPEN' || quoteAge > (this.cfg.maxQuoteAgeMs || 2500) || quoteAge < -1000) throw new Error('Venue quote changed or expired before submission');
+      if (action === 'BUY' && (now / 1000 - epoch >= 230 || signalAt !== undefined && now - signalAt > 2000)) throw new Error('Entry signal expired before submission');
+    }
+  }
+
   private async checkInstantSellOpportunities(upBid: number, downBid: number): Promise<void> {
+    if (!this.storageHealthy || !this.executionAllowed()) return;
     const quote = this.lastPredictOdds;
     if (!quote || Date.now() - quote.timestamp > (this.cfg.maxQuoteAgeMs || 2500)) return;
     const epoch = Math.floor(Date.now() / 300000) * 300;
     let changed = false;
     for (const trade of this.trades) {
+      if (!this.executionAllowed()) return;
       if (trade.mode !== (this.cfg.isPaperTrading ? 'paper' : 'live') || trade.resolved || trade.isSold || trade.isCancelled || !trade.isFilled || trade.isSellOrderPlaced || trade.submissionUncertain || trade.reconciliationRequired) continue;
       if (trade.targetLockTime !== epoch || this.predictMarketDetails?.epoch !== epoch) continue;
       const shares = trade.sharesQuantity || 0;
@@ -655,6 +723,7 @@ export class PredictFunArbitrageEngine {
       if (!credentials.walletPrivateKey || !credentials.smartWalletAddress && !credentials.walletAddress) continue;
       // A missing exact share balance is reconciled before attempting a sell.
       if (!trade.isSharesSynced) { await this.syncLivePortfolioPositions(); if (!trade.isSharesSynced) continue; }
+      if (!this.executionAllowed()) return;
       const sellShares = trade.sharesQuantity || 0;
       if (sellShares < 0.01) continue;
       trade.isSellOrderPlaced = true;
@@ -664,7 +733,7 @@ export class PredictFunArbitrageEngine {
       trade.reconciliationRequired = true;
       await this.saveTrades();
       try {
-        const result = await placePredictOrder(trade.direction === 'UP' ? 'BULL' : 'BEAR', sellShares, credentials.walletPrivateKey, credentials.smartWalletAddress || '', this.cfg.predictFunApiKey || process.env.PREDICT_FUN_API_KEY || '', limit, trade.targetLockTime, 'SELL', this.predictMarketDetails.market, trade.direction === 'UP' ? this.predictMarketDetails.upOutcome : this.predictMarketDetails.downOutcome);
+        const result = await placePredictOrder(trade.direction === 'UP' ? 'BULL' : 'BEAR', sellShares, credentials.walletPrivateKey, credentials.smartWalletAddress || '', process.env.PREDICT_FUN_API_KEY || this.cfg.predictFunApiKey || '', limit, trade.targetLockTime, 'SELL', this.predictMarketDetails.market, trade.direction === 'UP' ? this.predictMarketDetails.upOutcome : this.predictMarketDetails.downOutcome, () => this.beforeLiveSubmit('SELL', trade.targetLockTime));
         trade.sellOrderHash = result.hash;
         trade.sellOrderId = result.orderId;
         trade.sellExpiration = result.expiration;
@@ -707,7 +776,7 @@ export class PredictFunArbitrageEngine {
   private async checkLiveOrderFills(): Promise<void> {
     if (this.cfg.isPaperTrading) return;
     const credentials = getSystemConfig();
-    const apiKey = this.cfg.predictFunApiKey || process.env.PREDICT_FUN_API_KEY || '';
+    const apiKey = process.env.PREDICT_FUN_API_KEY || this.cfg.predictFunApiKey || '';
     if (!credentials.walletPrivateKey || !apiKey || !(credentials.smartWalletAddress || credentials.walletAddress)) return;
     let changed = false;
     for (const trade of this.trades) {
@@ -751,7 +820,7 @@ export class PredictFunArbitrageEngine {
   private async checkLiveSellFills(): Promise<void> {
     if (this.cfg.isPaperTrading) return;
     const credentials = getSystemConfig();
-    const apiKey = this.cfg.predictFunApiKey || process.env.PREDICT_FUN_API_KEY || '';
+    const apiKey = process.env.PREDICT_FUN_API_KEY || this.cfg.predictFunApiKey || '';
     if (!credentials.walletPrivateKey || !apiKey || !(credentials.smartWalletAddress || credentials.walletAddress)) return;
     let changed = false;
     for (const trade of this.trades) {
@@ -790,7 +859,7 @@ export class PredictFunArbitrageEngine {
   private async syncLivePortfolioPositions(): Promise<void> {
     if (this.cfg.isPaperTrading || this.portfolioSyncBusy || Date.now() - this.lastPortfolioSyncTime < 3000) return;
     const credentials = getSystemConfig();
-    const apiKey = this.cfg.predictFunApiKey || process.env.PREDICT_FUN_API_KEY || '';
+    const apiKey = process.env.PREDICT_FUN_API_KEY || this.cfg.predictFunApiKey || '';
     if (!credentials.walletPrivateKey || !apiKey || !(credentials.smartWalletAddress || credentials.walletAddress)) return;
     this.portfolioSyncBusy = true;
     this.lastPortfolioSyncTime = Date.now();
@@ -828,7 +897,7 @@ export class PredictFunArbitrageEngine {
       await this.checkLiveOrderFills();
       await this.checkLiveSellFills();
       await this.syncLivePortfolioPositions();
-      const apiKey = this.cfg.predictFunApiKey || process.env.PREDICT_FUN_API_KEY || '';
+      const apiKey = process.env.PREDICT_FUN_API_KEY || this.cfg.predictFunApiKey || '';
       let changed = false;
       const markets = new Map<number, any>();
       for (const trade of this.trades) {
@@ -1490,7 +1559,7 @@ export class PredictFunArbitrageEngine {
   // EXECUTE TRADE
   // ─────────────────────────────────────────────────────────────────────────
   private async executeTrade(signal: ArbitrageSignal): Promise<void> {
-    if (!this.storageHealthy || this.isExecutingTrade || !(this as any).isRunning || !this.cfg.enableAutoTrade) return;
+    if (!this.storageHealthy || !this.executionAllowed() || this.isExecutingTrade || !(this as any).isRunning || !this.cfg.enableAutoTrade) return;
     this.refreshRisk();
     const now = Date.now();
     const epoch = Math.floor(now / 300000) * 300;
@@ -1515,13 +1584,25 @@ export class PredictFunArbitrageEngine {
     if (!Number.isFinite(available) || available < tradeAmount / ask) return;
     const isPaper = this.cfg.isPaperTrading;
     const credentials = getSystemConfig();
-    const apiKey = this.cfg.predictFunApiKey || process.env.PREDICT_FUN_API_KEY || '';
+    const apiKey = process.env.PREDICT_FUN_API_KEY || this.cfg.predictFunApiKey || '';
     if (!isPaper && (process.env.ENABLE_LIVE_TRADING !== 'true' || !credentials.walletPrivateKey || !apiKey || !(credentials.smartWalletAddress || credentials.walletAddress) || now - this.lastBalanceSyncTime > 45000 || this.walletBalanceUsdt < tradeAmount * 1.02)) return;
+    let signerAddress: string | undefined;
+    let executionAccount: string | undefined;
+    if (!isPaper) {
+      try {
+        signerAddress = new ethers.Wallet(credentials.walletPrivateKey).address.toLowerCase();
+        executionAccount = ethers.getAddress(credentials.smartWalletAddress || credentials.walletAddress).toLowerCase();
+        // EOA orders are signed by this private key; a different configured
+        // balance address must never be recorded as their execution account.
+        if (!credentials.smartWalletAddress && executionAccount !== signerAddress) return;
+      } catch { return; }
+    }
     this.isExecutingTrade = true;
     this.lastTradeTime = now; // Reserve before awaiting network I/O.
     const trade: ArbitrageTrade = {
       id: `${isPaper ? 'Paper' : 'Pending'}_${now}_${signal.direction}`,
       mode: isPaper ? 'paper' : 'live', timestamp: now, direction: signal.direction,
+      executionAccount, signerAddress,
       amount: tradeAmount, submittedAmount: tradeAmount, entryOdds: 1 / limitPrice,
       fairOdds: signal.fairOdds, edge: netEdge, signal: { ...signal, edge: netEdge }, targetLockTime: epoch,
       feeRateBps, tokenId: String(outcome.onChainId), resolved: false, isSold: false,
@@ -1535,7 +1616,7 @@ export class PredictFunArbitrageEngine {
     try {
       await this.saveTrades();
       if (!isPaper) {
-        const result = await placePredictOrder(signal.direction === 'UP' ? 'BULL' : 'BEAR', tradeAmount, credentials.walletPrivateKey, credentials.smartWalletAddress || '', apiKey, limitPrice, epoch, 'BUY', details.market, outcome);
+        const result = await placePredictOrder(signal.direction === 'UP' ? 'BULL' : 'BEAR', tradeAmount, credentials.walletPrivateKey, credentials.smartWalletAddress || '', apiKey, limitPrice, epoch, 'BUY', details.market, outcome, () => this.beforeLiveSubmit('BUY', epoch, trade.timestamp));
         trade.id = result.orderId;
         trade.orderId = result.orderId;
         trade.orderHash = result.hash;
@@ -1584,31 +1665,28 @@ export class PredictFunArbitrageEngine {
 
   private async loadTrades(): Promise<void> {
     try {
-      if (fs.existsSync(this.cfg.memoryFilePath)) {
-        const raw = fs.readFileSync(this.cfg.memoryFilePath, 'utf-8');
-        const parsedTrades = JSON.parse(raw);
-        if (Array.isArray(parsedTrades)) {
-          const seenIds = new Set<string>();
-          this.trades = parsedTrades.filter(t => {
-            if (!t || !t.id) return false;
-            if (seenIds.has(t.id)) {
-              return false;
-            }
-            seenIds.add(t.id);
-            return true;
-          });
-        } else {
-          throw new Error('Trade ledger must be an array');
-        }
-        
-        for (const trade of this.trades) {
-          trade.mode ??= trade.id.startsWith('Paper_') || trade.id.startsWith('PaperFallback_') ? 'paper' : 'unknown';
-          trade.isCheckingFill = false;
-          trade.isCheckingSellFill = false;
-          if (trade.mode === 'live' && !trade.resolved && ((!trade.isFilled && (!trade.orderHash || !trade.orderExpiration)) || (trade.isSellOrderPlaced && (!trade.sellOrderHash || !trade.sellExpiration)))) trade.reconciliationRequired = true;
-        }
-        this.refreshRisk();
+      let parsedTrades: unknown;
+      if (this.runtime.loadTrades) {
+        parsedTrades = await this.runtime.loadTrades();
+      } else if (fs.existsSync(this.cfg.memoryFilePath)) {
+        parsedTrades = JSON.parse(fs.readFileSync(this.cfg.memoryFilePath, 'utf-8'));
+      } else {
+        parsedTrades = [];
       }
+      if (!Array.isArray(parsedTrades)) throw new Error('Trade ledger must be an array');
+      const seenIds = new Set<string>();
+      this.trades = parsedTrades.filter(t => {
+        if (!t || typeof t.id !== 'string' || !t.id || seenIds.has(t.id)) return false;
+        seenIds.add(t.id);
+        return true;
+      });
+      for (const trade of this.trades) {
+        trade.mode ??= trade.id.startsWith('Paper_') || trade.id.startsWith('PaperFallback_') ? 'paper' : 'unknown';
+        trade.isCheckingFill = false;
+        trade.isCheckingSellFill = false;
+        if (trade.mode === 'live' && !trade.resolved && ((!trade.isFilled && (!trade.orderHash || !trade.orderExpiration)) || (trade.isSellOrderPlaced && (!trade.sellOrderHash || !trade.sellExpiration)))) trade.reconciliationRequired = true;
+      }
+      this.refreshRisk();
     } catch (err) {
       this.storageHealthy = false;
       this.cfg.enableAutoTrade = false;
@@ -1620,6 +1698,18 @@ export class PredictFunArbitrageEngine {
   private async saveTrades(): Promise<void> {
     if (!this.storageHealthy) throw new Error('Trade ledger requires recovery; refusing to overwrite');
     try {
+      if (this.runtime.saveTrades) {
+        // Capture a detached version now and serialize writes. A later mutation
+        // must not change an already queued intent or overtake an older write.
+        const snapshot = JSON.parse(JSON.stringify(this.trades)) as ArbitrageTrade[];
+        const operation = this.persistenceQueue.then(async () => {
+          if (!this.storageHealthy) throw new Error('Trade ledger requires recovery; refusing to overwrite');
+          await this.runtime.saveTrades!(snapshot);
+        });
+        this.persistenceQueue = operation.catch(() => {});
+        await operation;
+        return;
+      }
       fs.mkdirSync(path.dirname(this.cfg.memoryFilePath), { recursive: true });
       const temp = `${this.cfg.memoryFilePath}.tmp`;
       fs.writeFileSync(temp, JSON.stringify(this.trades, null, 2), { encoding: 'utf-8', mode: 0o600 });
@@ -1722,33 +1812,9 @@ export class PredictFunArbitrageEngine {
       logs: this.logs,
       lastPredictOdds: this.lastPredictOdds,
       walletBalanceUsdt: this.walletBalanceUsdt,
+      walletBalanceObservedAt: this.lastBalanceSyncTime || null,
     };
   }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// EXPORTS
-// ─────────────────────────────────────────────────────────────────────────────
-export const arbitrageEngine = new PredictFunArbitrageEngine();
-
-export async function startArbitrage(): Promise<void> {
-  return arbitrageEngine.start();
-}
-
-export async function stopArbitrage(): Promise<void> {
-  return arbitrageEngine.stop();
-}
-
-export function getArbitrageStats() {
-  return arbitrageEngine.getStats();
-}
-
-export function updateArbitrageConfig(config: Partial<ArbitrageConfig>) {
-  arbitrageEngine.setConfig(config);
-}
-
-export function clearArbitrageLogs(): void {
-  arbitrageEngine.clearLogs();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

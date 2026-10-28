@@ -1,83 +1,106 @@
-# PredictFun Quant — eksekusi dan validasi
+# PredictFun Quant — build Vercel
 
-Bot BTC Up/Down 5 menit. Runtime aktif: `server.ts` → `server/arbitrage-engine.ts` → `LatencyDetector` / `BinanceFeed` / `predictClient`. Modul brain lama tetap disertakan untuk referensi.
+Dashboard + API berjalan sebagai Vercel Functions. Engine bot berjalan sebagai **satu Vercel Daemon**, dengan koneksi pasar dan state yang dipisahkan dari request browser. Ledger, konfigurasi, perintah, dan lease worker disimpan di **Vercel Blob private** menggunakan ETag conditional writes.
 
-**Mulai dengan paper trading.** Perubahan memperbaiki data, eksekusi, dan akuntansi; profitabilitas strategi belum terbukti. Confidence adalah skor kualitas heuristik, bukan probabilitas menang terkalibrasi. Model fair price memakai asumsi volatilitas tetap; harga Binance dapat berbeda dari oracle Predict.
+Paket ini dimulai dalam **paper mode, auto-trade berhenti**. Trading baru diaktifkan melalui kontrol dashboard setelah data dan penyimpanan siap. Kredensial wallet tidak dibutuhkan untuk paper.
 
-## Kredensial
+## Deploy di Vercel
 
-ZIP asli mengandung private key dan API key. Ganti semua kredensial tersebut dan pindahkan dana dari wallet yang private key-nya pernah dibagikan. Paket ini tidak memakai kredensial lama. Isi kredensial baru hanya pada `.env` mesin sendiri; jangan membagikannya.
+1. Buka [Vercel Drop](https://vercel.com/drop), unggah ZIP proyek ini, pilih team dan nama project, lalu deploy. Vercel Drop mendukung source ZIP dan build framework. Jika diminta pengaturan: **Other**, Node.js **24.x**, Build Command `npm run build`, Output Directory `public`, Install Command `npm ci`. Alternatif: unggah source ke Git dan Import Project. Root Directory harus folder teratas, bukan subfolder. Konfigurasi `daemons` ada di `vercel.json`; periksa build log worker pada deployment produksi.
+2. Buat/connect **Vercel Blob private**, sebaiknya region Tokyo `hnd1`. Hubungkan ke project. Pastikan environment produksi mendapat `BLOB_STORE_ID`. SDK memakai OIDC Vercel; daemon membaca token terbaru setiap operasi. Untuk penggunaan lokal dapat memakai `BLOB_READ_WRITE_TOKEN` server-side.
+3. Tambahkan environment produksi `BOT_CONTROL_TOKEN` acak minimal 24 karakter. Untuk mengizinkan tombol **Mulai Live**, set `ENABLE_LIVE_TRADING=true`; nilai `false` adalah kill switch server yang memblokir aktivasi live. Key Predict dan wallet dapat diisi melalui menu aplikasi setelah deploy, tanpa dimasukkan ke environment satu per satu. Jangan memakai key dari ZIP awal.
+4. Deploy ke **Production**. Preview deployments hanya menjalankan dashboard/API; Vercel Daemons belum berjalan di preview.
+5. Buka URL deployment dan login memakai `BOT_CONTROL_TOKEN`. Pada menu kredensial isi `PREDICT_FUN_API_KEY`, `WALLET_PRIVATE_KEY`, dan `PREDICT_ACCOUNT_ADDRESS` (deposit address smart account). Untuk EOA, kosongkan account address; alamat signer diturunkan dari private key. Klik simpan/validasi, tunggu worker mengakui revisi kredensial, lalu gunakan tombol **Mulai Live**. **Pause** menghentikan entry baru; pemantauan dan exit posisi tetap diperlukan.
 
-## Menjalankan
+Alternatif deploy lewat CLI Vercel yang mendukung Daemons (64.3.0 atau lebih baru):
 
-Gunakan Node.js 22 atau lebih baru:
+```bash
+npm ci
+npm run check
+npx vercel@latest login
+npx vercel@latest --prod
+```
+
+Setelah environment/storage berubah, deploy ulang produksi. Jangan meletakkan private key/API key ke kode, repository, `public`, atau environment berawalan `NEXT_PUBLIC_`/`VITE_`.
+
+## Cara kerja
+
+```mermaid
+flowchart TD
+  U[Dashboard browser] --> A[Vercel API]
+  A --> S[Private Blob state dan lease]
+  D[Vercel trading daemon] --> S
+  D <--> M[Binance dan Predict]
+```
+
+API hanya membaca snapshot serta mengantrekan kontrol; API tidak membuka koneksi trading dan tidak memulai engine. Worker membaca kontrol secara serial dan memberikan status applied/failed. Dashboard membedakan heartbeat worker, data pasar, dan auto-trade yang aktif.
+
+Satu dokumen CAS menyimpan state dan lease. Worker lama tidak boleh menimpa worker baru saat restart/rollout. Intent order disimpan sebelum submit. Sesudah signing/auth dan sebelum setiap HTTP submit, worker memeriksa lease kembali. Kehilangan lease atau kegagalan storage menghentikan entry/submit baru; order yang belum pasti harus direkonsiliasi.
+
+Daemon tidak menerima HTTP. Tidak ada cron ping atau loop bot yang diselipkan ke Functions. Filesystem container tidak dipakai sebagai ledger cloud. Deployment tidak membuat approvals, redeem, atau transaksi dana sungguhan secara otomatis.
+
+## Menjalankan lokal
 
 ```bash
 npm ci
 cp .env.example .env
+npm run build
 npm run dev
 ```
 
-Windows PowerShell: `Copy-Item .env.example .env`. Buka `http://127.0.0.1:3000`. Isi `PREDICT_FUN_API_KEY` baru untuk data Predict, termasuk dalam mode paper. Tanpa data valid bot melewatkan entry. Private key tidak dibutuhkan untuk paper.
+Windows PowerShell: `Copy-Item .env.example .env`. Dashboard lokal tersedia di `http://127.0.0.1:3000`. Isi token operator dan storage development yang terpisah dari produksi.
 
-Produksi: `npm run build`, lalu `npm start` dari direktori proyek. Folder `public` dan `data` harus tersedia; simpan `data` pada disk persisten. HOST bawaan localhost. Untuk binding eksternal, set `HOST=0.0.0.0` dan `BOT_CONTROL_TOKEN` acak minimal 24 karakter. Dashboard meminta token untuk perubahan mode. Gunakan HTTPS dan kontrol akses hosting untuk akses jaringan.
-
-## Perbaikan
-
-- Quote kedaluwarsa, malformed, crossed, replayed, atau market tertutup tidak dipakai untuk entry. Kegagalan API tidak menghasilkan harga buatan.
-- Confidence paksa 99% dan bypass edge saat spike dihapus. Entry memeriksa biaya, slippage, depth, batas harga, kualitas sinyal, umur quote, dan anggaran rugi.
-- Orderbook Predict diproses lewat WebSocket dengan heartbeat, reconnect, dan invalidasi market; REST menjadi fallback. Set `PREDICT_STREAMING=false` untuk REST saja.
-- Koneksi HTTP dipakai ulang, metadata dicache, loop tidak tumpang tindih, momentum memakai binary search dan memori terbatas. Feed pembanding hanya Binance Spot.
-- Ukuran order dan tick harga memakai integer 18 desimal. Order kecil tidak dibesarkan otomatis. Salt kriptografis dan expiry pendek membatasi signature lama.
-- Accepted belum berarti filled. Timeout tidak dikirim ulang secara buta. Status tidak pasti tetap memblokir entry sampai rekonsiliasi.
-- Partial sale mempertahankan cost basis dan hasil penjualan. Dust disimpan sampai settlement; posisi wallet di luar bot tidak dijual otomatis.
-- Paper/live melekat pada tiap trade. Ledger baru: `data/verified_arbitrage_trades.json`. Risiko dibangun ulang dari ledger saat restart; file rusak/gagal disimpan menghentikan entry.
-- Hasil ronde memakai resolusi Predict, bukan tebakan Binance. PnL tetap estimasi sampai cocok dengan eksekusi, biaya, dan receipt sebenarnya.
-- Konfigurasi divalidasi, kredensial hanya di environment, dan API publik tidak mengembalikan key. Token dan pemeriksaan origin melindungi kontrol bot.
-
-## Setelan awal untuk evaluasi
-
-| Parameter | Nilai |
-| --- | --- |
-| Mode | Paper |
-| Batas per entry | 1 USDT |
-| Anggaran rugi harian | 5 USDT |
-| Minimum model edge setelah estimasi biaya | 0,03 |
-| Minimum skor kualitas | 0,65 |
-| Maksimum percobaan order | 30/jam |
-| Cooldown | 1.000 ms |
-| Slippage limit | 0,01 USDT/share |
-| REST refresh cadangan | minimal 1.000 ms |
-| Maksimum umur quote | 2.500 ms |
-
-Parameter ini belum dioptimasi terhadap data masa depan. Edge adalah margin probabilitas, bukan janji return. Slippage maksimum melalui API adalah 0,02 USDT/share. Risiko harian memakai tanggal UTC (reset 07.00 WIB). Stop-loss tidak menjamin exit saat tidak ada pembeli.
-
-## Tes dan laporan paper
+Worker dijalankan di terminal lain:
 
 ```bash
-npm run check
-npm run paper:report
+npm run start:worker
 ```
 
-Laporan membaca ledger tanpa jaringan dan menampilkan mode, fill/cancel/pending, PnL estimasi, profit factor, serta realized drawdown. Path opsional: `npm run paper:report -- data/verified_arbitrage_trades.json`.
+Atau build container lokal dari **root proyek**, karena Dockerfile memakai build context root:
 
-Paper memakai limit terburuk yang diizinkan dan depth yang terlihat; antrean, adverse selection, dan matching latency belum disimulasikan lengkap. Sampel beberapa kondisi pasar dan bandingkan dengan settlement sebenarnya. Profit paper belum membuktikan profit live.
+```bash
+docker build -f Dockerfile.worker -t predict-fun-worker .
+docker run --env-file .env --init predict-fun-worker
+```
 
-Arsip `arbitrage_trades.json` berisi 500 record tanpa mode eksplisit dan tidak menjadi bukti performa live. File eksperimen root `test-*.ts` tidak termasuk `npm test`; beberapa memanggil API bila dijalankan manual. Tes otomatis baru memakai data sintetis/mock. Tidak ada transaksi sungguhan selama pengujian ini. Smoke test tanpa pasar: set `BOT_OFFLINE=true` sebelum menjalankan server.
+`vercel dev` tidak menjalankan daemon. Gunakan `BOT_OFFLINE=true` saat memeriksa worker tanpa koneksi pasar; label dashboard tetap menunjukkan mode offline. Jangan memakai namespace/storage produksi untuk tes lokal. `BOT_STATE_NAMESPACE` memisahkan dokumen state, default `predict-fun/v1`.
 
-## Live dan pemulihan
+## Batas dan operasional
 
-Live memerlukan `ENABLE_LIVE_TRADING=true`, `BOT_CONTROL_TOKEN` minimal 24 karakter, private key baru, API key baru, dan `PREDICT_ACCOUNT_ADDRESS` untuk smart account atau `WALLET_ADDRESS` untuk EOA. Approvals exchange harus sudah tersedia. Bot tidak membuat approvals atau redeem otomatis. Pergantian mode ditolak bila meninggalkan posisi pada mode lain.
+- Vercel Daemons masih **Public Beta** dan hanya berjalan di Production. Konfigurasi paket menjaga satu instance `hnd1`, 1 GiB; lease tetap diperlukan karena rollout bisa melibatkan dua proses.
+- Hobby dibatasi **5 Active CPU-hours/bulan** untuk Daemons. Saat kuota habis, Vercel menghentikan daemon hingga bulan berikutnya atau perubahan plan. Pro/Enterprise mengenakan biaya compute; Blob mempunyai kuota/biaya penyimpanan dan operasi sendiri. Pantau Usage; paket tidak mengubah plan/billing akun.
+- Snapshot daemon diperbarui setiap 2 detik dan status dashboard diperiksa setiap 1 detik; ini terpisah dari pemrosesan tick pasar. Membuka dashboard dan menjalankan daemon memakai operasi Blob, jadi pantau Usage. Tidak ada jaminan latensi, ketersediaan data venue, matching, atau waktu cancel.
+- Dokumen cloud dibatasi 4 MiB. Jika penuh, worker gagal tertutup; ekspor/arsipkan ledger sebelum melanjutkan. Jangan menghapus ledger aktif untuk mengatasi error karena berisi pending orders dan counter risiko.
+- Stop harian memakai tanggal UTC (07.00 WIB). Pause menghentikan entry baru; proses rekonsiliasi dan exit posisi yang sudah ada perlu tetap berjalan.
+- State cloud dimulai kosong; histori lama tanpa mode tidak diimpor sebagai bukti performa live. Key lama di ZIP awal tidak disertakan.
 
-Jika muncul `RECONCILE`, periksa hash order di Predict serta saldo/receipt wallet. Jangan menghapus ledger atau menganggap timeout zero fill. Proses mati sebelum hash tersimpan memerlukan rekonsiliasi manual; entry baru ditahan. Backup ledger sebelum koreksi manual.
+## Menu kredensial dan live
 
-`/orders/remove` menghapus dari orderbook, tetapi tidak membatalkan signature on-chain. Konfirmasi status dan expiry tetap diperlukan. Fill, fee, dan PnL masih dapat berupa estimasi konservatif; gas, settlement receipt, serta redeem belum direkonsiliasi otomatis. Tidak ada jaminan waktu cancel/sell.
+Tiga input tersedia di dashboard: `PREDICT_FUN_API_KEY`, `WALLET_PRIVATE_KEY`, dan `PREDICT_ACCOUNT_ADDRESS`. Input key disembunyikan, hanya dikirim melalui API operator, lalu dikosongkan. API tidak pernah mengirim kembali nilai key ke browser. Password operator hanya berada di memori tab. Gunakan URL HTTPS Vercel.
 
-## Rujukan
+Kredensial disimpan sebagai ciphertext AES-256-GCM di Blob private. Kunci enkripsi berasal dari `BOT_CREDENTIALS_KEY` server (opsional, 64 karakter hex) atau diturunkan dari token operator dengan salt per envelope. Jika token operator diubah tanpa kunci enkripsi terpisah, kredensial perlu dimasukkan ulang. Error dekripsi menghentikan submit, bukan beralih diam-diam ke key lain.
 
+Penyimpanan kredensial baru mem-pause entry. Rotasi ditolak selama ada posisi/order live yang belum selesai agar key wallet lama tidak hilang sebelum rekonsiliasi. Worker mengikat pemeriksaan autentikasi ke revisi kredensial; keberadaan key saja tidak membuktikan koneksi aktif.
+
+
+Profitabilitas strategi belum dibuktikan. Confidence adalah skor heuristik dan model fair price masih memakai asumsi volatilitas tetap. PnL/fee merupakan estimasi konservatif sampai cocok dengan receipt settlement, saldo, gas, dan redeem.
+
+Live membutuhkan `ENABLE_LIVE_TRADING=true` di server dan kredensial baru melalui menu aplikasi atau environment. Smart account memakai deposit address `PREDICT_ACCOUNT_ADDRESS`; EOA memakai alamat signer yang diturunkan dari private key. Approvals exchange harus sudah tersedia. Pergantian mode ditolak bila meninggalkan posisi pada mode lain; timeout tidak dianggap zero fill. Browser tidak menyimpan private key ke localStorage; form hanya mengirimnya saat penyimpanan melalui endpoint operator terenkripsi HTTPS. Private key tidak masuk kode publik, log, response API, atau ledger plaintext.
+
+Jika muncul status rekonsiliasi, periksa order hash dan saldo/receipt di Predict. Jangan mengirim ulang atau menghapus catatan secara manual tanpa menyelesaikan rekonsiliasi. Backup state sebelum pemulihan. `/orders/remove` hanya menghapus dari orderbook; signature on-chain masih bergantung pada expiry/invalidasi.
+
+## Pemeriksaan
+
+`npm run check` menjalankan TypeScript, tes deterministik, dan build dashboard/API/daemon. Tes tidak memakai kredensial produksi dan tidak membuat order sungguhan. `VALIDATION.md` mencatat pemeriksaan yang benar-benar selesai beserta hal yang belum bisa diverifikasi.
+
+## Referensi resmi
+
+- [Vercel Drop](https://vercel.com/drop)
+- [Alur ZIP dan build Vercel Drop](https://vercel.com/kb/guide/vercel-drop-vs-netlify-drop)
+- [Vercel Daemons](https://vercel.com/docs/daemons)
+- [Konfigurasi Daemons](https://vercel.com/docs/daemons/config-reference)
+- [Kuota dan batas Daemons](https://vercel.com/docs/daemons/limits)
+- [Vercel Blob](https://vercel.com/docs/vercel-blob)
 - [Predict API](https://dev.predict.fun/)
-- [Orderbook dan sisi NO](https://dev.predict.fun/doc-685654)
-- [Predict SDK](https://github.com/PredictDotFun/sdk)
-- [Predict WebSocket](https://dev.predict.fun/general-information-1915499m0)
 
-Tidak ada benchmark latensi jaringan atau backtest out-of-sample pada tick asli dalam paket ini. Peningkatan efisiensi lokal tidak membuktikan keunggulan terhadap market maker.
+Versi ini disiapkan untuk deployment Vercel. Keberhasilan build lokal tidak sama dengan keberhasilan build container/deployment di akun Vercel.

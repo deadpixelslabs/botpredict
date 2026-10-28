@@ -110,6 +110,8 @@ test('ambiguous live BUY persists its signed hash and blocks a second order subm
     assert.equal(value.trades.length,1);
     const pending = value.trades[0];
     assert.equal(pending.mode,'live');
+    assert.equal(pending.executionAccount,syntheticAddress.toLowerCase());
+    assert.equal(pending.signerAddress,syntheticAddress.toLowerCase());
     assert.equal(pending.orderHash,observedHash);
     assert.match(pending.orderHash,/^0x[0-9a-f]{64}$/i);
     assert.equal(pending.submissionUncertain,true);
@@ -117,6 +119,8 @@ test('ambiguous live BUY persists its signed hash and blocks a second order subm
     assert.equal(pending.isFilled,false);
     const saved = JSON.parse(readFileSync(value.cfg.memoryFilePath,'utf8'))[0];
     assert.equal(saved.orderHash,observedHash);
+    assert.equal(saved.executionAccount,syntheticAddress.toLowerCase());
+    assert.equal(saved.signerAddress,syntheticAddress.toLowerCase());
     assert.equal(saved.submissionUncertain,true);
     now += 2000;
     value.lastPredictOdds.timestamp = now;

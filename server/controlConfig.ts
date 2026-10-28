@@ -20,7 +20,7 @@ export function validateControlConfig(input: unknown, env = process.env): Partia
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Configuration must be an object');
   const output: Record<string, number | boolean> = {};
   for (const [originalKey, value] of Object.entries(input)) {
-    const key = aliases[originalKey] || originalKey;
+    const key = Object.hasOwn(aliases, originalKey) ? aliases[originalKey] : originalKey;
     if (key === 'isLiveTrading') {
       if (typeof value !== 'boolean') throw new Error('isLiveTrading must be a boolean');
       if (output.isPaperTrading !== undefined && output.isPaperTrading !== !value) throw new Error('Conflicting trading modes');
@@ -29,7 +29,7 @@ export function validateControlConfig(input: unknown, env = process.env): Partia
       if (typeof value !== 'boolean') throw new Error(`${key} must be a boolean`);
       if (key === 'isPaperTrading' && output.isPaperTrading !== undefined && output.isPaperTrading !== value) throw new Error('Conflicting trading modes');
       output[key] = value;
-    } else if (ranges[key]) {
+    } else if (Object.hasOwn(ranges, key)) {
       const [min, max, integer] = ranges[key];
       if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max || (integer && !Number.isInteger(value))) {
         throw new Error(`${key} must be ${integer ? 'an integer' : 'a number'} between ${min} and ${max}`);
@@ -49,7 +49,7 @@ export function validateControlConfig(input: unknown, env = process.env): Partia
 }
 
 export function publicConfig(config: ArbitrageConfig): Partial<ArbitrageConfig> {
-  return Object.fromEntries(Object.entries(config).filter(([key]) => ranges[key] || booleans.has(key))) as Partial<ArbitrageConfig>;
+  return Object.fromEntries(Object.entries(config).filter(([key]) => Object.hasOwn(ranges, key) || booleans.has(key))) as Partial<ArbitrageConfig>;
 }
 
 export function validControlToken(header: string | undefined, expected: string | undefined): boolean {

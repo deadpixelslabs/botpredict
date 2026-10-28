@@ -26,6 +26,11 @@ function headers(apiKey: string, jwt?: string) {
 function authKey(pb: any, account: string, apiKey: string): string {
     return `${(account || pb.signer.address).toLowerCase()}:${digest(apiKey)}`;
 }
+
+/** Require a fresh signed challenge for an operator-requested readiness check. */
+export function invalidatePredictAuth(pb: any, predictAccount: string, apiKey: string): void {
+    tokens.delete(authKey(pb, predictAccount, apiKey));
+}
 function errorMessage(e: any): string {
     // Do not stringify Axios errors: their request configuration contains secrets.
     return String(e?.response?.data?.message || e?.message || "Predict API request failed").slice(0, 300);
@@ -157,7 +162,7 @@ export class PredictOrderSubmissionError extends Error {
 export async function placePredictOrder(
     position: "BULL" | "BEAR", amountUsdt: number, privateKey: string, predictAccount: string,
     apiKey: string, customPricePerShare = 0.5, targetLockTime = Math.floor(Date.now() / 1000),
-    action: "BUY" | "SELL" = "BUY", prefetchedMarket?: any, prefetchedOutcome?: any
+    action: "BUY" | "SELL" = "BUY", prefetchedMarket?: any, prefetchedOutcome?: any, beforeSubmit?: () => Promise<void>
 ): Promise<PredictOrderPlacement> {
     const catSlug = `btc-updown-5m-${targetLockTime}`;
     const targetMarket = prefetchedMarket || await getPredictMarket(targetLockTime, apiKey);
@@ -205,7 +210,9 @@ export async function placePredictOrder(
     } };
     let attemptedSubmission = false;
     try {
-        const res = await authenticated(pb, predictAccount, apiKey, jwt => {
+        const res = await authenticated(pb, predictAccount, apiKey, async jwt => {
+            // Revalidate ownership after signing/auth and before every network write, including a 401 retry.
+            await beforeSubmit?.();
             if (Math.floor(Date.now() / 1000) >= expiration - 1) throw new Error("Signed order expired before submission");
             attemptedSubmission = true;
             return api.post("/orders", payload, { headers: headers(apiKey, jwt) });
