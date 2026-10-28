@@ -1,0 +1,17 @@
+{
+  "isPaperTrading": true,
+  "isLiveTrading": false,
+  "maxTradeAmount": 1,
+  "maxDailyLoss": 5,
+  "minConfidence": 0.65,
+  "minEdge": 0.03,
+  "minPriceMovePct": 0.008,
+  "detectionWindowMs": 150,
+  "executionSlippage": 0.01,
+  "predictSyncIntervalMs": 1000,
+  "cooldownMs": 1000,
+  "enableAutoTrade": true,
+  "maxTradesPerHour": 30,
+  "takeProfitPct": 0.04,
+  "stopLossPct": 0.08
+}
