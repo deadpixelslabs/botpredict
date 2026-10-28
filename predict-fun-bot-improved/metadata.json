@@ -1,8 +1,0 @@
-{
-  "name": "Remix: Remix: bot fable 5",
-  "description": "new",
-  "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
-}
