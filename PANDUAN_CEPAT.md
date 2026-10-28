@@ -18,4 +18,4 @@ Key disimpan terenkripsi dan tidak dikembalikan API. Gunakan wallet/key baru; ja
 
 Vercel Daemons masih Public Beta. Periksa Usage: Hobby dibatasi 5 Active CPU-hours/bulan; kuota/billing Blob terpisah. Data lama tanpa mode tidak dianggap bukti profit. Profitabilitas belum dibuktikan.
 
-Build lokal dan tes otomatis sudah diperiksa. Deployment dari sesi penyusunan paket ditolak Vercel dengan 403 Forbidden pada pembuatan project. Karena itu belum ada URL produksi, koneksi akun nyata, atau transaksi mainnet yang dikonfirmasi untuk paket ini. Lihat `VALIDATION.md`.
+Setelah deploy, buka `/api/health` pada domain aplikasi: hasilnya harus JSON HTTP 200. Jika muncul `FUNCTION_INVOCATION_FAILED`, periksa deployment API sebelum mencoba token. Jika health berhasil tetapi daemon belum mempunyai heartbeat, bot belum berjalan. Status koneksi akun nyata dan transaksi mainnet harus diperiksa terpisah; lihat `VALIDATION.md`.

@@ -281,10 +281,17 @@ async function api(path, options = {}) {
   const issuedToken = controlToken;
   const {timeoutMs = 8000,...fetchOptions} = options;
   const response = await fetch(path, {...fetchOptions, cache:'no-store', signal:AbortSignal.timeout(timeoutMs), headers:{...(options.body ? {'Content-Type':'application/json'} : {}),...(issuedToken ? {'Authorization':'Bearer '+issuedToken} : {}),...options.headers}});
-  const body = await response.json().catch(() => ({}));
+  const text = await response.text();
+  let body = null;
+  try { body = JSON.parse(text); } catch {}
   if (issuedToken !== controlToken) throw new Error('Sesi operator sudah berubah.');
   if (response.status === 401) { lockDashboard(); $('loginMessage').textContent = 'Token tidak valid atau sudah diganti.'; }
-  if (!response.ok) throw new Error(body.error || 'Layanan cloud belum tersedia.');
+  if (!response.ok) {
+    const failedFunction = response.headers.get('x-vercel-error') === 'FUNCTION_INVOCATION_FAILED' || /\bFUNCTION_INVOCATION_FAILED\b/.test(text);
+    const fallback = failedFunction ? 'API gagal dimulai (HTTP '+response.status+', FUNCTION_INVOCATION_FAILED). Periksa deployment Function.' : response.status === 404 ? 'Endpoint API tidak ditemukan (HTTP 404). Periksa routing deployment.' : 'Layanan cloud gagal merespons (HTTP '+response.status+').';
+    throw new Error(typeof body?.error === 'string' ? body.error : fallback);
+  }
+  if (!body || typeof body !== 'object') throw new Error('Respons API bukan JSON. Periksa routing deployment.');
   return body;
 }
 function setConnected(ok, text) { $('conn').classList.toggle('offline', !ok); $('connText').textContent = text; }
@@ -296,7 +303,7 @@ function updateHealth(flags) {
   $('setupMessage').textContent = !flags.operatorConfigured ? 'Tambahkan BOT_CONTROL_TOKEN acak minimal 24 karakter di Vercel Environment Variables lalu deploy ulang.' : !flags.storageConfigured ? 'Hubungkan private Vercel Blob store ke proyek dan deploy ulang. Jangan menyimpan ledger pada filesystem Function.' : !flags.predictApiConfigured && flags.credentialsStatusAvailable ? 'Isi API key baru pada menu Setup Predict.fun. Status autentikasi baru valid setelah daemon memeriksanya.' : 'Daemon menerbitkan snapshot. Status berjalan baru valid setelah heartbeat daemon diterima; tidak ada data demo.';
   $('loginButton').disabled = !flags.operatorConfigured || !flags.storageConfigured || loginBusy;
 }
-async function health() { try { updateHealth(await api('/api/health')); } catch { $('setupTitle').textContent = 'Endpoint cloud belum tersedia'; $('setupMessage').textContent = 'Pastikan deployment API sudah selesai. Dashboard statis saja tidak menjalankan bot.'; } }
+async function health() { try { updateHealth(await api('/api/health')); } catch(error) { $('setupTitle').textContent = 'Endpoint cloud belum tersedia'; $('setupMessage').textContent = error.message; } }
 
 $('operatorForm').addEventListener('submit', async event => {
   event.preventDefault(); if (loginBusy) return; loginBusy = true;

@@ -35,6 +35,8 @@ flowchart TD
 
 API hanya membaca snapshot serta mengantrekan kontrol; API tidak membuka koneksi trading dan tidak memulai engine. Worker membaca kontrol secara serial dan memberikan status applied/failed. Dashboard membedakan heartbeat worker, data pasar, dan auto-trade yang aktif.
 
+`npm run build` membundel semua modul lokal API menjadi entry ESM `api/handler.js`. File hasil build ini disertakan di Git agar Function dapat dilacak sebelum build berjalan. Rewrite eksplisit meneruskan seluruh `/api/*`, termasuk rute bertingkat, ke entry yang sama. `npm run test:native` mengimpor entry tersebut dengan Node langsung tanpa loader TypeScript.
+
 Satu dokumen CAS menyimpan state dan lease. Worker lama tidak boleh menimpa worker baru saat restart/rollout. Intent order disimpan sebelum submit. Sesudah signing/auth dan sebelum setiap HTTP submit, worker memeriksa lease kembali. Kehilangan lease atau kegagalan storage menghentikan entry/submit baru; order yang belum pasti harus direkonsiliasi.
 
 Daemon tidak menerima HTTP. Tidak ada cron ping atau loop bot yang diselipkan ke Functions. Filesystem container tidak dipakai sebagai ledger cloud. Deployment tidak membuat approvals, redeem, atau transaksi dana sungguhan secara otomatis.
@@ -91,7 +93,9 @@ Jika muncul status rekonsiliasi, periksa order hash dan saldo/receipt di Predict
 
 ## Pemeriksaan
 
-`npm run check` menjalankan TypeScript, tes deterministik, dan build dashboard/API/daemon. Tes tidak memakai kredensial produksi dan tidak membuat order sungguhan. `VALIDATION.md` mencatat pemeriksaan yang benar-benar selesai beserta hal yang belum bisa diverifikasi.
+`npm run check` menjalankan TypeScript, tes deterministik, build dashboard/API/daemon, serta tes HTTP entry Function dengan Node langsung. Tes tidak memakai kredensial produksi dan tidak membuat order sungguhan. `VALIDATION.md` mencatat pemeriksaan yang benar-benar selesai beserta hal yang belum bisa diverifikasi.
+
+Jika dashboard menampilkan `FUNCTION_INVOCATION_FAILED`, Function gagal dimulai sebelum login. Periksa `/api/health`: endpoint ini harus mengembalikan JSON HTTP 200 tanpa token. HTTP 401 pada endpoint operator berarti API sudah merespons tetapi token belum valid; HTTP 503 dengan `STORAGE_NOT_CONFIGURED` berarti storage perlu dihubungkan. Keberhasilan health tidak membuktikan daemon atau trading live sudah berjalan.
 
 ## Referensi resmi
 

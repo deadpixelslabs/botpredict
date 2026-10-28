@@ -6,8 +6,11 @@
   "installCommand": "npm ci",
   "regions": ["hnd1"],
   "functions": {
-    "api/**/*.ts": { "maxDuration": 30 }
+    "api/handler.js": { "maxDuration": 30 }
   },
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/handler?__bot_path=:path*" }
+  ],
   "headers": [
     {
       "source": "/(.*)",

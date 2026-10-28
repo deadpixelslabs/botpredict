@@ -13,8 +13,9 @@
     "start:worker": "node dist/worker.cjs",
     "lint": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "check": "npm run lint && npm test && npm run build",
-    "paper:report": "node --import tsx scripts/paper-report.ts"
+    "check": "npm run lint && npm test && npm run build && npm run test:native",
+    "paper:report": "node --import tsx scripts/paper-report.ts",
+    "test:native": "node --test tests/native-handler.test.mjs"
   },
   "dependencies": {
     "@predictdotfun/sdk": "^1.3.6",

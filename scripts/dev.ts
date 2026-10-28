@@ -1,7 +1,8 @@
 import 'dotenv/config';
 import express from 'express';
 import path from 'node:path';
-import app from '../api/[...route]';
+import { createCloudApi } from '../server/cloudApi';
+const app = createCloudApi();
 app.use(express.static(path.join(process.cwd(), 'public')));
 app.get('/', (_req, res) => res.sendFile(path.join(process.cwd(), 'public/dashboard.html')));
 const port = Number(process.env.PORT || 3000);
