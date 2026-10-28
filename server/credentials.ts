@@ -3,7 +3,8 @@ import { Wallet, getAddress } from 'ethers';
 
 export interface CredentialInput {
   predictFunApiKey: string;
-  walletPrivateKey: string;
+  /** Empty for PAPER market data; a signing key is required for LIVE. */
+  walletPrivateKey?: string;
   predictAccountAddress?: string;
 }
 
@@ -41,20 +42,24 @@ export function validateCredentials(input: unknown): BotCredentials {
   if (predictFunApiKey.length < 8 || predictFunApiKey.length > 1024 || /\s|[\u0000-\u001f\u007f]/.test(predictFunApiKey)) {
     invalid('PREDICT_FUN_API_KEY must contain 8–1024 non-whitespace characters.');
   }
-  if (typeof value.walletPrivateKey !== 'string') invalid('WALLET_PRIVATE_KEY is required.');
-  const rawKey = value.walletPrivateKey.trim().replace(/^0x/i, '');
-  if (!/^[a-fA-F0-9]{64}$/.test(rawKey)) invalid('WALLET_PRIVATE_KEY must be a valid 32-byte hex key.');
-  let wallet: Wallet;
-  try { wallet = new Wallet(`0x${rawKey}`); }
-  catch { invalid('WALLET_PRIVATE_KEY is not a valid signing key.'); }
+  if (value.walletPrivateKey !== undefined && typeof value.walletPrivateKey !== 'string') invalid('WALLET_PRIVATE_KEY must be a signing key or empty for PAPER.');
+  const privateKey = String(value.walletPrivateKey ?? '').trim();
+  let wallet: Wallet | null = null;
+  if (privateKey) {
+    const rawKey = privateKey.replace(/^0x/i, '');
+    if (!/^[a-fA-F0-9]{64}$/.test(rawKey)) invalid('WALLET_PRIVATE_KEY must be a valid 32-byte hex key.');
+    try { wallet = new Wallet(`0x${rawKey}`); }
+    catch { invalid('WALLET_PRIVATE_KEY is not a valid signing key.'); }
+  }
   if (value.predictAccountAddress !== undefined && typeof value.predictAccountAddress !== 'string') invalid('PREDICT_ACCOUNT_ADDRESS must be an address or empty for an EOA.');
   const account = String(value.predictAccountAddress ?? '').trim();
+  if (account && !wallet) invalid('PREDICT_ACCOUNT_ADDRESS requires a signing key. Leave both wallet fields empty for PAPER.');
   let predictAccountAddress = '';
   if (account) {
     try { predictAccountAddress = getAddress(account); }
     catch { invalid('PREDICT_ACCOUNT_ADDRESS is not a valid address.'); }
   }
-  return { predictFunApiKey, walletPrivateKey: wallet!.privateKey, predictAccountAddress, walletAddress: wallet!.address };
+  return { predictFunApiKey, walletPrivateKey: wallet?.privateKey || '', predictAccountAddress, walletAddress: wallet?.address || '' };
 }
 
 /** Only a complete environment credential bundle can be used for signing. */
@@ -66,6 +71,7 @@ export function credentialsFromEnvironment(env: NodeJS.ProcessEnv = process.env)
 /** Opaque proof identity binds authentication to the exact key bundle, including environment rotations. */
 export function credentialProofId(input: BotCredentials, env: NodeJS.ProcessEnv = process.env): string {
   const value = validateCredentials(input);
+  if (!value.walletPrivateKey) invalid('LIVE authentication proof requires a signing key.');
   const dedicated = env.BOT_CREDENTIALS_KEY?.trim();
   const key = dedicated && /^[a-fA-F0-9]{64}$/.test(dedicated) ? Buffer.from(dedicated, 'hex') : Buffer.from(env.BOT_CONTROL_TOKEN || '');
   if (key.length < 24) throw new CredentialsError('KEY_NOT_CONFIGURED', 'Server identity key is not configured.');
@@ -84,9 +90,9 @@ export function getSecretStatus(credentials?: BotCredentials | null): {
   if (!credentials) return { predictFunApiKeyConfigured: false, walletPrivateKeyConfigured: false, predictAccountAddressConfigured: false, walletAddress: null };
   const normalized = validateCredentials(credentials);
   return {
-    predictFunApiKeyConfigured: true, walletPrivateKeyConfigured: true,
+    predictFunApiKeyConfigured: true, walletPrivateKeyConfigured: !!normalized.walletPrivateKey,
     predictAccountAddressConfigured: !!normalized.predictAccountAddress,
-    walletAddress: normalized.predictAccountAddress || normalized.walletAddress,
+    walletAddress: normalized.predictAccountAddress || normalized.walletAddress || null,
   };
 }
 

@@ -148,7 +148,7 @@
   .notice { min-height: 20px; color: var(--amber); font-size: 12px; line-height: 1.5; }
   .credential-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(250px,1fr)); gap: 14px; }
   .credential-grid label { display: grid; gap: 7px; font-size: 11px; color: var(--muted); font-weight: 700; letter-spacing: .7px; }
-  .credential-grid input { width: 100%; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 11px; font-family: 'JetBrains Mono',monospace; font-size: 12px; }
+  .credential-grid input, .credential-grid select { width: 100%; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 11px; font-family: 'JetBrains Mono',monospace; font-size: 12px; }
   .credential-actions { margin-top: 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .credential-panel p { color: var(--muted); font-size: 12px; line-height: 1.7; margin: 10px 0; }
   .badge.waiting { color: var(--amber); border-color: rgba(245,158,11,.4); }
@@ -174,15 +174,17 @@
 
 <section id="credentialsPanel" class="panel credential-panel" style="margin-bottom:16px" hidden>
   <h3>Setup Predict.fun</h3>
-  <p>Isi kredensial baru untuk koneksi akun. Key dienkripsi di server sebelum disimpan dan tidak dikembalikan ke browser. Menyimpan ulang akan mem-pause entry; posisi live harus diselesaikan sebelum mengganti akun.</p>
+  <p>Untuk PAPER, cukup simpan API key; private key tidak diperlukan. Pilih LIVE jika ingin menambahkan wallet. Key dienkripsi sebelum disimpan dan tidak dikembalikan ke browser. Simpan ulang mengganti seluruh setup dan mem-pause entry; posisi live harus diselesaikan lebih dulu.</p>
   <form id="credentialsForm" autocomplete="off">
     <div class="credential-grid">
+      <label>PILIH SETUP<select id="credentialPurpose" disabled><option value="paper">PAPER — API key saja</option><option value="live">LIVE — API key + wallet</option></select></label>
       <label>PREDICT_FUN_API_KEY<input id="predictApiKey" name="predict-api-secret" type="password" autocomplete="off" minlength="8" maxlength="1024" placeholder="API key baru" disabled required /></label>
-      <label>WALLET_PRIVATE_KEY<input id="walletPrivateKey" name="wallet-signing-secret" type="password" autocomplete="off" minlength="64" maxlength="66" placeholder="Private key signer / Privy" disabled required /></label>
+      <label>WALLET_PRIVATE_KEY · hanya LIVE<input id="walletPrivateKey" name="wallet-signing-secret" type="password" autocomplete="off" minlength="64" maxlength="66" placeholder="Private key signer / Privy" disabled /></label>
       <label>PREDICT_ACCOUNT_ADDRESS<input id="predictAccountAddress" name="predict-account-address" type="text" autocomplete="off" maxlength="42" placeholder="0x… deposit address; kosong untuk EOA" disabled /></label>
     </div>
     <div class="credential-actions"><button id="saveCredentialsButton" class="control-button" type="submit" disabled>Simpan kredensial</button><button id="startLiveButton" class="control-button" type="button" onclick="startLive()" disabled>Aktifkan LIVE</button><span id="credentialStatus" class="notice">Status kredensial belum tersedia.</span></div>
   </form>
+  <p>Kolom rahasia kembali kosong setelah simpan untuk keamanan. Lihat status <strong>TERSIMPAN</strong> di atas untuk memastikan hasilnya. Tersimpan belum berarti API terautentikasi atau data tersedia; daemon harus aktif untuk mengambil data.</p>
   <p id="accountStatus">Belum ada akun terverifikasi.</p>
   <p>Aktivasi live memerlukan <code>ENABLE_LIVE_TRADING=true</code> pada server. Status <strong>LIVE ONLINE</strong> baru ditampilkan setelah autentikasi Predict, heartbeat daemon, quote, dan saldo terbukti siap. Order tetap harus terisi untuk menjadi transaksi.</p>
 </section>
@@ -310,14 +312,14 @@ $('operatorForm').addEventListener('submit', async event => {
   controlToken = $('operatorToken').value.trim(); $('loginButton').disabled = true; $('loginMessage').textContent = 'Memverifikasi operator…';
   try {
     latestConfig = await api('/api/config');
-    $('operatorToken').value = ''; $('operatorGate').hidden = true; $('logoutButton').hidden = false; $('credentialsPanel').hidden = false; $('saveCredentialsButton').disabled = credentialsBusy; for (const id of ['predictApiKey','walletPrivateKey','predictAccountAddress']) $(id).disabled = credentialsBusy; updateCredentialStatus(latestConfig); $('loginMessage').textContent = '';
+    $('operatorToken').value = ''; $('operatorGate').hidden = true; $('logoutButton').hidden = false; $('credentialsPanel').hidden = false; $('saveCredentialsButton').disabled = credentialsBusy; setCredentialInputsEnabled(); updateCredentialStatus(latestConfig); $('loginMessage').textContent = '';
     await refresh();
   } catch(error) { controlToken = ''; latestConfig = null; $('loginMessage').textContent = error.message; }
   finally { loginBusy = false; $('loginButton').disabled = false; }
 });
 function lockDashboard() {
   controlToken = ''; latestConfig = latestStats = null; pendingCommandId = null; lastBtc = 0;
-  clearCredentialInputs(true); for (const id of ['predictApiKey','walletPrivateKey','predictAccountAddress']) $(id).disabled = true; $('credentialsPanel').hidden = true; $('saveCredentialsButton').disabled = $('startLiveButton').disabled = true; $('credentialStatus').textContent = 'Status kredensial belum tersedia.'; $('accountStatus').textContent = 'Belum ada akun terverifikasi.';
+  clearCredentialInputs(true); $('credentialPurpose').value = 'paper'; setCredentialInputsEnabled(); $('credentialsPanel').hidden = true; $('saveCredentialsButton').disabled = $('startLiveButton').disabled = true; $('credentialStatus').textContent = 'Status kredensial belum tersedia.'; $('accountStatus').textContent = 'Belum ada akun terverifikasi.';
   $('operatorToken').value = ''; $('operatorGate').hidden = false; $('logoutButton').hidden = true; $('modeBadge').disabled = $('runButton').disabled = true;
   for (const id of ['btcPrice','dailyPnl','totalPnl','winRate','wallet','activity','upCents','downCents']) $(id).textContent = '—';
   $('wlSub').textContent = 'W — · L —'; $('activitySub').textContent = 'snapshot belum tersedia'; $('logs').textContent = 'Dashboard terkunci.';
@@ -337,7 +339,8 @@ function updateControls(commands = []) {
   $('runButton').disabled = !controlToken || pending || (!latestConfig?.enableAutoTrade && (!latestStats?.workerAvailable || !latestConfig?.predictApiConfigured));
   $('runButton').textContent = latestConfig?.enableAutoTrade ? 'Pause entry' : latestConfig?.isPaperTrading === false ? 'Mulai live' : 'Mulai paper';
   $('saveCredentialsButton').disabled = !controlToken || credentialsBusy || Boolean(latestStats?.isPaperTrading === false && latestStats?.activeTrades);
-  $('startLiveButton').disabled = !controlToken || credentialsBusy || pending || !latestConfig?.liveTradingEnabled || !latestConfig?.predictApiConfigured || !latestConfig?.walletConfigured || latestConfig?.credentialValidation !== 'format_valid' || !latestStats?.workerAvailable || latestStats?.reconciliationRequired;
+  $('startLiveButton').disabled = !controlToken || credentialsBusy || pending || Boolean(liveSetupReason());
+  $('startLiveButton').title = liveSetupReason();
 
 }
 async function queueConfig(changes) {
@@ -347,33 +350,67 @@ async function queueConfig(changes) {
 }
 async function toggleMode() {
   if (!latestConfig) return;
-  if (latestConfig.isPaperTrading !== false && !latestConfig.liveTradingEnabled) { notice('Live belum diaktifkan di Vercel Environment Variables. Tetap gunakan paper untuk evaluasi.'); return; }
+  if (latestConfig.isPaperTrading !== false) { const reason = liveSetupReason(); if (reason) { notice(reason); return; } }
   await queueConfig({isPaperTrading:latestConfig.isPaperTrading === false});
 }
-async function toggleAutoTrade() { if (latestConfig) await queueConfig({enableAutoTrade:!latestConfig.enableAutoTrade}); }
+async function toggleAutoTrade() {
+  if (!latestConfig) return;
+  if (!latestConfig.enableAutoTrade && latestConfig.isPaperTrading === false) { const reason = liveSetupReason(); if (reason) { notice(reason); return; } }
+  await queueConfig({enableAutoTrade:!latestConfig.enableAutoTrade});
+}
 function clearCredentialInputs(all = false) { $('predictApiKey').value = ''; $('walletPrivateKey').value = ''; if (all) $('predictAccountAddress').value = ''; }
+function setCredentialInputsEnabled() {
+  const enabled = Boolean(controlToken) && !credentialsBusy;
+  const live = $('credentialPurpose').value === 'live';
+  $('credentialPurpose').disabled = $('predictApiKey').disabled = !enabled;
+  $('walletPrivateKey').disabled = $('predictAccountAddress').disabled = !enabled || !live;
+  $('walletPrivateKey').required = live;
+}
+$('credentialPurpose').addEventListener('change', () => {
+  if ($('credentialPurpose').value !== 'live') { $('walletPrivateKey').value = ''; $('predictAccountAddress').value = ''; }
+  setCredentialInputsEnabled();
+});
+function liveSetupReason() {
+  if (latestConfig?.credentialValidation === 'unreadable') return 'LIVE belum siap: kredensial tersimpan tidak dapat dibuka. Simpan ulang setelah memeriksa enkripsi server.';
+  if (!latestConfig?.predictApiConfigured) return 'LIVE belum siap: isi dan simpan PREDICT_FUN_API_KEY terlebih dahulu. Mengisi kolom saja belum menyimpan key.';
+  if (!latestConfig?.walletConfigured || latestConfig?.credentialValidation !== 'format_valid') return 'LIVE belum siap: API key saja cukup untuk PAPER. Pilih setup LIVE lalu simpan API key dan WALLET_PRIVATE_KEY yang valid.';
+  if (!latestConfig?.liveTradingEnabled) return 'LIVE belum diaktifkan: set ENABLE_LIVE_TRADING=true pada server lalu deploy ulang.';
+  if (!latestStats?.workerAvailable) return 'LIVE belum siap: daemon offline. Tunggu heartbeat daemon; kredensial tersimpan tidak menjalankan daemon secara otomatis.';
+  if (latestStats?.reconciliationRequired) return 'LIVE belum siap: rekonsiliasi order sebelumnya harus diselesaikan.';
+  return '';
+}
 function updateCredentialStatus(info) {
   const state = info.credentialValidation;
-  $('credentialStatus').textContent = state === 'unreadable' ? 'Kredensial tidak dapat dibuka; isi ulang setelah memeriksa kunci enkripsi server.' : state === 'format_valid' ? (info.predictAuthenticated ? 'Autentikasi Predict terverifikasi · revisi '+info.credentialRevision : 'Kredensial tersedia · revisi '+info.credentialRevision+' · menunggu autentikasi daemon') : 'Isi tiga kolom untuk setup live; account boleh kosong untuk EOA.';
-  $('accountStatus').textContent = info.walletAddress ? (info.predictAuthenticated ? 'Akun Predict terautentikasi: ' : 'Alamat akun setup: ')+info.walletAddress : 'Belum ada alamat akun dari kredensial yang valid.';
+  const source = info.credentialsStored ? 'TERSIMPAN · revisi '+info.credentialRevision : 'Tersedia dari server';
+  $('credentialStatus').textContent = state === 'unreadable' ? 'Kredensial tersimpan tidak dapat dibuka; isi ulang setelah memeriksa kunci enkripsi server.' : state === 'paper_ready' ? source+' · API key untuk PAPER · wallet belum diisi' : state === 'format_valid' ? source+' · '+(info.predictAuthenticated ? 'autentikasi Predict terverifikasi' : 'format valid; menunggu autentikasi daemon') : 'BELUM TERSIMPAN · isi API key lalu klik Simpan. PAPER tidak memerlukan private key.';
+  $('accountStatus').textContent = info.walletAddress ? (info.predictAuthenticated ? 'Akun Predict terautentikasi: ' : 'Alamat akun setup: ')+info.walletAddress : 'PAPER tidak memerlukan wallet. Untuk LIVE, pilih setup LIVE dan tambahkan private key.';
+}
+function offlineWorkerMessage(stats) {
+  const saved = stats.credentialsStored ? 'Kredensial TERSIMPAN · revisi '+stats.credentialRevision+'. ' : '';
+  if (stats.workerLastPhase === 'failed') {
+    const code = stats.workerFailureCode;
+    const help = code === 'READ_FAILED' || code === 'WRITE_FAILED' || code === 'NOT_CONFIGURED' ? 'Daemon melaporkan kegagalan penyimpanan ('+code+'). Periksa koneksi private Blob dan izin daemon.' : code === 'CORRUPT_STATE' ? 'Daemon melaporkan CORRUPT_STATE. Pulihkan data penyimpanan sebelum menjalankan kembali.' : code === 'LEASE_LOST' || code === 'CONFLICT' ? 'Daemon melaporkan '+code+'. Periksa kepemilikan lease dan instance daemon sebelum menjalankan kembali.' : code === 'WORKER_ERROR' ? 'Daemon melaporkan WORKER_ERROR. Periksa log deployment daemon untuk penyebabnya.' : 'Status terakhir daemon: failed. Penyebab belum tersedia; periksa log deployment daemon.';
+    return saved+help+' Simpan key tidak menjalankan daemon secara otomatis.';
+  }
+  if (stats.workerLastPhase && stats.workerLastPhase !== 'offline') return saved+'Daemon offline; status terakhir: '+stats.workerLastPhase+'. Heartbeat baru belum tersedia. Periksa proses daemon agar data dapat diperbarui.';
+  return saved+'Daemon belum memberikan heartbeat aktif. Jalankan atau periksa daemon untuk mengambil data; penyebab offline belum diketahui.';
 }
 $('credentialsForm').addEventListener('submit', async event => {
-  event.preventDefault(); if (!controlToken || credentialsBusy) return; credentialsBusy = true; $('saveCredentialsButton').disabled = true; for (const id of ['predictApiKey','walletPrivateKey','predictAccountAddress']) $(id).disabled = true;
-  const payload = {PREDICT_FUN_API_KEY:$('predictApiKey').value.trim(),WALLET_PRIVATE_KEY:$('walletPrivateKey').value.trim(),PREDICT_ACCOUNT_ADDRESS:$('predictAccountAddress').value.trim()};
+  event.preventDefault(); if (!controlToken || credentialsBusy) return; credentialsBusy = true; $('saveCredentialsButton').disabled = true; setCredentialInputsEnabled();
+  const live = $('credentialPurpose').value === 'live';
+  const payload = {PREDICT_FUN_API_KEY:$('predictApiKey').value.trim(),WALLET_PRIVATE_KEY:live ? $('walletPrivateKey').value.trim() : '',PREDICT_ACCOUNT_ADDRESS:live ? $('predictAccountAddress').value.trim() : ''};
   $('credentialStatus').textContent = 'Menyimpan terenkripsi…';
   try {
     const result = await api('/api/credentials',{method:'POST',body:JSON.stringify(payload),timeoutMs:25000});
     if (!controlToken) return;
     clearCredentialInputs(); pendingCommandId = null; latestConfig = {...latestConfig,...result,enableAutoTrade:false}; updateCredentialStatus(result);
-    notice('Kredensial tersimpan terenkripsi. Entry di-pause; tunggu daemon memuat revisi baru sebelum mengaktifkan LIVE.');
+    notice(result.walletConfigured ? 'Kredensial TERSIMPAN terenkripsi. Entry di-pause; tunggu daemon memuat revisi baru sebelum aktivasi LIVE.' : 'API key TERSIMPAN terenkripsi untuk PAPER. Kolom key sengaja dikosongkan. Data baru muncul setelah daemon aktif; klik Mulai paper setelah heartbeat tersedia.');
     await refresh();
   } catch(error) { if (controlToken) { $('credentialStatus').textContent = 'Penyimpanan belum terkonfirmasi.'; notice(error.message+' Periksa status sebelum mengulang.'); } }
-  finally { clearCredentialInputs(); credentialsBusy = false; for (const id of ['predictApiKey','walletPrivateKey','predictAccountAddress']) $(id).disabled = !controlToken; updateControls(latestConfig?.commands || []); }
+  finally { clearCredentialInputs(); credentialsBusy = false; setCredentialInputsEnabled(); updateControls(latestConfig?.commands || []); }
 });
 async function startLive() {
-  if (!latestConfig?.liveTradingEnabled) { notice('Set ENABLE_LIVE_TRADING=true pada server sebelum aktivasi live.'); return; }
-  if (!latestConfig?.walletConfigured || !latestConfig?.predictApiConfigured || latestConfig?.credentialValidation !== 'format_valid') { notice('Simpan kredensial yang valid terlebih dahulu.'); return; }
-  if (!latestStats?.workerAvailable) { notice('Tunggu heartbeat daemon sebelum mengaktifkan live.'); return; }
+  const reason = liveSetupReason(); if (reason) { notice(reason); return; }
   await queueConfig({isPaperTrading:false,enableAutoTrade:true});
 }
 
@@ -391,7 +428,7 @@ async function pollStats() {
   try {
     const stats = await api('/api/stats'); latestStats = stats;
     latestConfig = {...latestConfig,...stats}; updateHealth(stats);
-    $('workerChip').textContent = 'Daemon: ' + (stats.workerAvailable ? stats.workerPhase : 'offline');
+    $('workerChip').textContent = 'Daemon: ' + (stats.workerAvailable ? stats.workerPhase : 'offline'+(stats.workerLastPhase && stats.workerLastPhase !== 'offline' ? ' · terakhir '+stats.workerLastPhase : ''));
     const p = stats.currentPrice;
     $('btcPrice').textContent = typeof p === 'number' && p > 0 ? '$'+p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
     if (lastBtc && p && p !== lastBtc) { $('btcPrice').classList.remove('flash-up','flash-down'); void $('btcPrice').offsetWidth; $('btcPrice').classList.add(p > lastBtc ? 'flash-up' : 'flash-down'); } lastBtc = p || 0;
@@ -405,8 +442,8 @@ async function pollStats() {
     const live = stats.isPaperTrading ? stats.workerAvailable && stats.workerPhase === 'running' : stats.liveOnline;
     const label = !stats.workerAvailable ? 'DAEMON OFFLINE' : stats.storageHealthy === false ? 'LEDGER ERROR' : stats.reconciliationRequired ? 'RECONCILE ORDER' : stats.workerPhase === 'waiting_for_auth' ? 'AUTENTIKASI BELUM SIAP' : !stats.isPaperTrading && !stats.liveOnline ? 'LIVE BELUM SIAP' : stats.workerPhase === 'waiting_for_api_key' ? 'API KEY DIPERLUKAN' : stats.workerPhase === 'paused' ? 'ENTRY PAUSED' : stats.lastPredictOdds ? (stats.quoteSource || 'VENUE')+' SNAPSHOT' : 'QUOTE BELUM TERSEDIA';
     setConnected(live,label); $('btcSub').textContent = stats.workerHeartbeatAt ? 'snapshot '+new Date(stats.workerHeartbeatAt).toLocaleTimeString('id-ID') : 'belum ada snapshot daemon';
-    $('setupTitle').textContent = !stats.workerAvailable ? 'Daemon belum memberikan heartbeat' : !stats.predictApiConfigured ? 'API key Predict baru diperlukan' : stats.tradingActive ? 'Entry otomatis aktif' : 'Entry otomatis belum aktif';
-    $('setupMessage').textContent = stats.workerMessage || 'Dashboard menampilkan snapshot daemon; hasil model dan profit belum tervalidasi.';
+    $('setupTitle').textContent = !stats.workerAvailable ? stats.workerLastPhase === 'failed' ? 'Daemon berhenti setelah kegagalan' : 'Daemon belum memberikan heartbeat aktif' : !stats.predictApiConfigured ? 'API key Predict baru diperlukan' : stats.tradingActive ? 'Entry otomatis aktif' : 'Entry otomatis belum aktif';
+    $('setupMessage').textContent = !stats.workerAvailable ? offlineWorkerMessage(stats) : stats.workerMessage || 'Dashboard menampilkan snapshot daemon; hasil model dan profit belum tervalidasi.';
     const second = stats.epochSecond; $('epochFill').style.width = ((second/300)*100).toFixed(2)+'%'; $('epochClock').textContent = `${Math.floor(second/60)}:${String(second%60).padStart(2,'0')} / 5:00`;
     if (stats.lastPredictOdds) { const odds = stats.lastPredictOdds; $('upCents').textContent = (100/odds.upOdds).toFixed(1)+'¢'; $('downCents').textContent = (100/odds.downOdds).toFixed(1)+'¢'; $('upOdds').textContent = 'odds '+odds.upOdds.toFixed(2); $('downOdds').textContent = 'odds '+odds.downOdds.toFixed(2); }
     else { $('upCents').textContent = $('downCents').textContent = '—'; $('upOdds').textContent = $('downOdds').textContent = 'belum ada quote segar'; }

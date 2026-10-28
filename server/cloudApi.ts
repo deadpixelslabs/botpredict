@@ -17,6 +17,8 @@ export interface CloudApiOptions {
 
 const QUEUE_LIMIT = 20;
 const HEARTBEAT_LIMIT_MS = 30000;
+const WORKER_PHASES = new Set(['starting','standby','waiting_for_storage','waiting_for_api_key','waiting_for_configuration','waiting_for_open_positions','offline','running','paused','failed','stopped','waiting_for_auth','waiting_for_reconciliation']);
+const WORKER_FAILURE_CODES = new Set(['READ_FAILED','WRITE_FAILED','LEASE_LOST','CONFLICT','CORRUPT_STATE','NOT_CONFIGURED','WORKER_ERROR']);
 
 function setupFlags(env: NodeJS.ProcessEnv) {
   return {
@@ -36,7 +38,7 @@ function credentialContext(state: CloudState, env: NodeJS.ProcessEnv) {
   try { credentials = stored ? unsealCredentials(state.sealedCredentials!,env) : credentialsFromEnvironment(env); }
   catch { readable = false; }
   let proofId:string|null = null;
-  if (credentials) { try { proofId = credentialProofId(credentials,env); } catch { readable = false; credentials = null; } }
+  if (credentials?.walletPrivateKey) { try { proofId = credentialProofId(credentials,env); } catch { readable = false; credentials = null; } }
   const secretStatus = getSecretStatus(credentials);
   // An environment API key alone remains sufficient for paper market data.
   const paperApiConfigured = !stored && readable && Boolean(env.PREDICT_FUN_API_KEY);
@@ -49,7 +51,7 @@ function credentialContext(state: CloudState, env: NodeJS.ProcessEnv) {
     credentialRevision: revision,
     credentialsStored: stored,
     credentialSource: stored ? 'stored' : env.PREDICT_FUN_API_KEY || env.WALLET_PRIVATE_KEY ? 'environment' : 'none',
-    credentialValidation: !readable ? 'unreadable' : credentials ? 'format_valid' : 'missing',
+    credentialValidation: !readable ? 'unreadable' : credentials?.walletPrivateKey ? 'format_valid' : secretStatus.predictFunApiKeyConfigured || paperApiConfigured ? 'paper_ready' : 'missing',
     credentialsStatusAvailable: true,
   };
   const resolvedEnv = {...env};
@@ -69,7 +71,7 @@ function credentialContext(state: CloudState, env: NodeJS.ProcessEnv) {
 // Cache public booleans/address only. Never retain decrypted keys in the API cache.
 const credentialStatusCache = new Map<string, {flags:ReturnType<typeof credentialContext>['flags'];proofId:string|null}>();
 function publicCredentialFlags(state: CloudState, env: NodeJS.ProcessEnv) {
-  const identity = createHash('sha256').update(JSON.stringify({revision:state.credentialRevision || 0,sealed:state.sealedCredentials,environment:[env.BOT_CREDENTIALS_KEY,env.BOT_CONTROL_TOKEN,env.PREDICT_FUN_API_KEY,env.WALLET_PRIVATE_KEY,env.PREDICT_ACCOUNT_ADDRESS,env.WALLET_ADDRESS]})).digest('hex');
+  const identity = createHash('sha256').update(JSON.stringify({revision:state.credentialRevision || 0,sealed:state.sealedCredentials,environment:[env.BOT_CREDENTIALS_KEY,env.BOT_CONTROL_TOKEN,env.PREDICT_FUN_API_KEY,env.WALLET_PRIVATE_KEY,env.PREDICT_ACCOUNT_ADDRESS,env.WALLET_ADDRESS,env.ENABLE_LIVE_TRADING]})).digest('hex');
   const cached = credentialStatusCache.get(identity);
   if (cached) return {flags:{...cached.flags},proofId:cached.proofId};
   const context = credentialContext(state,env);
@@ -89,13 +91,36 @@ function workerState(state: CloudState, now: number) {
   const heartbeat = finite(status.heartbeatAt) ? status.heartbeatAt : null;
   const age = heartbeat === null ? null : now - heartbeat;
   const available = age !== null && age >= -1000 && age <= HEARTBEAT_LIMIT_MS;
+  const lastPhase = WORKER_PHASES.has(status.phase) ? status.phase as string : 'offline';
   return {
     workerAvailable: available,
     workerHeartbeatAt: heartbeat,
     workerAgeMs: age,
-    workerPhase: available ? String(status.phase || 'waiting') : 'offline',
+    workerPhase: available ? lastPhase : 'offline',
+    workerLastPhase: lastPhase,
+    workerFailureCode: WORKER_FAILURE_CODES.has(status.failureCode) ? status.failureCode as string : null,
+    workerFailedAt: finite(status.failedAt) && status.failedAt >= 0 && status.failedAt <= now + 1000 ? status.failedAt : null,
     workerMessage: available && typeof status.message === 'string' ? status.message.slice(0, 240) : 'Daemon belum aktif atau heartbeat terakhir sudah kedaluwarsa.',
   };
+}
+
+class ControlReadinessError extends Error {
+  constructor(public readonly code: string, message: string) { super(message); }
+}
+
+function validateQueuedControl(input: unknown, state: CloudState, env: NodeJS.ProcessEnv): Record<string,unknown> {
+  const context = credentialContext(state,env);
+  const fields = input && typeof input === 'object' && !Array.isArray(input) ? input as Record<string,unknown> : {};
+  const requestsLive = fields.isPaperTrading === false || fields.isLiveTrading === true || (fields.enableAutoTrade === true && state.config.isPaperTrading === false && fields.isPaperTrading !== true && fields.isLiveTrading !== false);
+  if (requestsLive) {
+    if (context.flags.credentialValidation === 'unreadable') throw new ControlReadinessError('LIVE_CREDENTIALS_UNREADABLE','LIVE belum siap: kredensial tersimpan tidak dapat dibuka. Simpan ulang setelah memeriksa kunci enkripsi server.');
+    if (!context.flags.predictApiConfigured) throw new ControlReadinessError('LIVE_API_KEY_REQUIRED','LIVE belum siap: simpan PREDICT_FUN_API_KEY terlebih dahulu.');
+    if (!context.flags.walletConfigured) throw new ControlReadinessError('LIVE_WALLET_REQUIRED','LIVE belum siap: API key saja cukup untuk PAPER. Pilih setup LIVE dan simpan WALLET_PRIVATE_KEY yang valid.');
+    if (!context.flags.liveTradingEnabled) throw new ControlReadinessError('LIVE_DISABLED','LIVE belum diaktifkan: set ENABLE_LIVE_TRADING=true pada server, lalu deploy ulang.');
+  }
+  const payload = validateControlConfig(input,context.resolvedEnv) as Record<string,unknown>;
+  if (!Object.keys(payload).length) throw new Error('Empty configuration.');
+  return payload;
 }
 function safeText(value: unknown, env: NodeJS.ProcessEnv, max = 1200): string {
   let text = typeof value === 'string' ? value : '';
@@ -211,23 +236,26 @@ export function createCloudApi(options: CloudApiOptions = {}) {
     const allowed = ['PREDICT_FUN_API_KEY','WALLET_PRIVATE_KEY','PREDICT_ACCOUNT_ADDRESS'];
     const body = req.body;
     if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).length !== allowed.length || !allowed.every(key => Object.hasOwn(body,key) && typeof body[key] === 'string')) {
-      res.status(400).json({error:'Isi tepat tiga kolom kredensial. Gunakan account address kosong untuk EOA.',code:'INVALID_CREDENTIALS'}); return;
+      res.status(400).json({error:'Kirim tiga kolom kredensial. Untuk PAPER, isi API key dan kosongkan kedua kolom wallet.',code:'INVALID_CREDENTIALS'}); return;
     }
     let sealed: ReturnType<typeof sealCredentials>;
+    let paperOnly = false;
     try {
       const credentials = validateCredentials({predictFunApiKey:body.PREDICT_FUN_API_KEY,walletPrivateKey:body.WALLET_PRIVATE_KEY,predictAccountAddress:body.PREDICT_ACCOUNT_ADDRESS});
+      paperOnly = !credentials.walletPrivateKey;
       sealed = sealCredentials(credentials,env);
-    } catch { res.status(400).json({error:'Format kredensial atau konfigurasi enkripsi tidak valid. Tidak ada key yang disimpan.',code:'INVALID_CREDENTIALS'}); return; }
+    } catch { res.status(400).json({error:'Kredensial belum disimpan. PAPER cukup API key tanpa spasi; kosongkan kedua kolom wallet. Untuk LIVE, gunakan private key hex 64 karakter dan alamat akun yang valid atau kosong untuk EOA. Periksa juga konfigurasi enkripsi server.',code:'INVALID_CREDENTIALS'}); return; }
     try {
       const state = await getStore().mutateState(draft => {
         if (draft.ledger.some(trade => trade?.mode === 'live' && trade.resolved !== true && trade.isSold !== true)) throw new Error('OPEN_LIVE_POSITIONS');
         draft.sealedCredentials = sealed;
         draft.credentialRevision = (Number.isSafeInteger(draft.credentialRevision) ? draft.credentialRevision! : 0) + 1;
         draft.config.enableAutoTrade = false;
+        if (paperOnly) draft.config.isPaperTrading = true;
         // An older queued live command must not silently activate newly replaced credentials.
         draft.commands = draft.commands.map(command => (!command.status || command.status === 'pending') && command.type === 'config' ? {...command,status:'failed',error:'Credentials changed. Submit the control command again.',appliedAt:now()} : command);
       });
-      res.json({success:true,saved:true,autoTradePaused:true,restartRequired:true,...credentialContext(state,env).flags});
+      res.json({success:true,saved:true,autoTradePaused:true,restartRequired:true,isPaperTrading:state.config.isPaperTrading !== false,...credentialContext(state,env).flags});
     } catch(error:any) {
       if (error?.message === 'OPEN_LIVE_POSITIONS') res.status(409).json({error:'Selesaikan atau rekonsiliasi seluruh posisi/order live sebelum mengganti kredensial.',code:'OPEN_LIVE_POSITIONS'});
       else res.status(503).json({error:'Kredensial belum tersimpan. Konfigurasi sebelumnya tetap digunakan.',code:'CREDENTIALS_NOT_SAVED'});
@@ -251,7 +279,8 @@ export function createCloudApi(options: CloudApiOptions = {}) {
       });
       res.status(202).json({success:true,queued:true,commandId:id,status:'pending'});
     } catch (error:any) {
-      if (error?.message === 'QUEUE_FULL') res.status(409).json({error:'Antrean kontrol penuh. Tunggu daemon memproses perintah.',code:'QUEUE_FULL'});
+      if (error instanceof ControlReadinessError) res.status(400).json({error:error.message,code:error.code});
+      else if (error?.message === 'QUEUE_FULL') res.status(409).json({error:'Antrean kontrol penuh. Tunggu daemon memproses perintah.',code:'QUEUE_FULL'});
       else res.status(503).json({error:'Perintah belum tersimpan. Konfigurasi aktif belum berubah.',code:'COMMAND_NOT_SAVED'});
     }
   };
@@ -261,10 +290,11 @@ export function createCloudApi(options: CloudApiOptions = {}) {
     try { state = await getStore().readState(); }
     catch { res.status(503).json({error:'Penyimpanan bot belum dapat dibaca. Perintah tidak disimpan.',code:'STORAGE_UNAVAILABLE'}); return; }
     try {
-      payload = validateControlConfig(req.body,credentialContext(state,env).resolvedEnv) as Record<string,unknown>;
-      if (!Object.keys(payload).length) throw new Error('Tidak ada pengaturan untuk diubah.');
-    } catch(error:any) { res.status(400).json({error:'Pengaturan tidak valid atau kredensial live belum siap. Periksa format, batas, dan ENABLE_LIVE_TRADING.',code:'INVALID_CONFIG'}); return; }
-    return enqueue(res,'config',payload,state => { validateControlConfig(payload,credentialContext(state,env).resolvedEnv); });
+      payload = validateQueuedControl(req.body,state,env);
+    } catch(error:any) {
+      res.status(400).json(error instanceof ControlReadinessError ? {error:error.message,code:error.code} : {error:'Pengaturan tidak valid. Periksa format dan batas nilai pengaturan.',code:'INVALID_CONFIG'}); return;
+    }
+    return enqueue(res,'config',payload,state => { validateQueuedControl(payload,state,env); });
   });
   app.post('/api/logs/clear', (req,res) => {
     if (req.body && Object.keys(req.body).length) { res.status(400).json({error:'Perintah clear logs tidak menerima payload.'}); return; }

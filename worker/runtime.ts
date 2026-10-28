@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { ArbitrageConfig, ArbitrageTrade, EngineRuntimeOptions } from '../server/arbitrage-engine';
-import type { CloudCommand, CloudState } from '../server/cloudStore';
+import { CloudStoreError, type CloudCommand, type CloudState } from '../server/cloudStore';
 import { publicConfig, validateControlConfig } from '../server/controlConfig';
 import { credentialProofId, credentialsFromEnvironment, unsealCredentials, type BotCredentials } from '../server/credentials';
 
@@ -9,6 +9,8 @@ const RENEW_MS = 10_000;
 const PUBLISH_MS = 2_000;
 const SUBMIT_MARGIN_MS = 10_000;
 const AUTH_PROOF_MS = 5 * 60_000;
+const STORAGE_FAILURE_CODES = new Set(['READ_FAILED', 'WRITE_FAILED', 'LEASE_LOST', 'CONFLICT', 'CORRUPT_STATE', 'NOT_CONFIGURED']);
+type WorkerFailureCode = CloudStoreError['code'] | 'WORKER_ERROR';
 
 export interface WorkerStore {
   acquireLease(owner: string, ttlMs?: number): Promise<boolean>;
@@ -48,6 +50,8 @@ export class WorkerRuntime {
   readonly owner: string;
   phase = 'starting';
   faulted = false;
+  lastFailureCode: WorkerFailureCode | null = null;
+  lastFailureAt: number | null = null;
   private readonly env: NodeJS.ProcessEnv;
   private readonly now: () => number;
   private readonly log: (message: string) => void;
@@ -114,6 +118,15 @@ export class WorkerRuntime {
     this.log(`[Worker] ${phase}`);
   }
 
+  private recordFailure(error: unknown): void {
+    // A shutdown write may fail after the original error. Preserve the first
+    // cause and never persist or log arbitrary provider messages or codes.
+    if (this.lastFailureCode !== null) return;
+    this.lastFailureCode = error instanceof CloudStoreError && STORAGE_FAILURE_CODES.has(error.code) ? error.code : 'WORKER_ERROR';
+    this.lastFailureAt = this.now();
+    this.log(`[Worker] failure: ${this.lastFailureCode}`);
+  }
+
   /** Engine invokes this after its intent has been committed, immediately before each live POST. */
   private beforeSubmit = async (action: 'BUY' | 'SELL' = 'BUY'): Promise<void> => {
     if (!this.canExecute() || !this.options.store) throw new Error('Worker is not ready to submit an order');
@@ -121,7 +134,8 @@ export class WorkerRuntime {
     try {
       await this.options.store.assertLease(this.owner, SUBMIT_MARGIN_MS);
       state = await this.options.store.readState();
-    } catch {
+    } catch (error) {
+      this.recordFailure(error);
       this.faulted = true;
       this.configurationApplied = false;
       this.setPhase('failed');
@@ -203,8 +217,8 @@ export class WorkerRuntime {
         this.setPhase(this.engine.cfg.enableAutoTrade ? 'running' : 'paused');
       }
       if (this.now() - this.lastPublish >= PUBLISH_MS) await this.publish();
-    } catch {
-      await this.failClosed();
+    } catch (error) {
+      await this.failClosed(error);
     } finally {
       this.tickBusy = false;
       this.tickResolve?.();
@@ -240,7 +254,8 @@ export class WorkerRuntime {
           const snapshot = structuredClone(trades);
           await store.mutateState(draft => { draft.ledger = snapshot; }, this.owner);
           this.ledgerDurable = true;
-        } catch {
+        } catch (error) {
+          this.recordFailure(error);
           this.configurationApplied = false;
           this.faulted = true;
           this.setPhase('failed');
@@ -383,6 +398,8 @@ export class WorkerRuntime {
     const status = {
       ...(this.engine?.getStats() ?? {}), heartbeatAt: this.now(), workerId: this.owner, phase: this.phase,
       workerStatus: this.phase.toUpperCase(),
+      failureCode: this.lastFailureCode,
+      failedAt: this.lastFailureAt,
       authenticatedAt: this.authenticatedAt,
       authCredentialProofId,
       credentialsRevisionApplied: this.credentialsRevisionApplied,
@@ -402,16 +419,23 @@ export class WorkerRuntime {
     this.lastPublish = this.now();
   }
 
-  private async failClosed(): Promise<void> {
+  private async failClosed(error: unknown): Promise<void> {
     this.faulted = true;
-    this.active = false;
     this.configurationApplied = false;
     this.ledgerDurable = false;
+    this.engineStarted = false;
+    this.predictAuthenticated = false;
+    this.recordFailure(error);
     this.setPhase('failed');
     if (this.engine) {
       try { this.engine.setConfig({ enableAutoTrade: false }); } catch {}
       try { await this.engine.stop(); } catch {}
     }
+    // Best effort only: the same owner CAS that protects ledger writes must
+    // also protect failure diagnostics after an expired lease or takeover.
+    try { await this.publish(); } catch {}
+    this.active = false;
+    this.leaseDeadline = 0;
     // If ownership moved, releaseLease cannot remove the new owner's lease.
     try { await this.options.store?.releaseLease(this.owner); } catch {}
   }

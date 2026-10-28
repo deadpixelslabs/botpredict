@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CloudStore, type BlobJsonAdapter, type CloudState } from '../server/cloudStore';
+import { CloudStore, CloudStoreError, type BlobJsonAdapter, type CloudState } from '../server/cloudStore';
 import { WorkerRuntime, type WorkerEngine, type WorkerOptions } from '../worker/runtime';
 import { sealCredentials, credentialsFromEnvironment, credentialProofId } from '../server/credentials';
 import type { ArbitrageConfig, ArbitrageTrade, EngineRuntimeOptions } from '../server/arbitrage-engine';
@@ -147,11 +147,99 @@ test('fresh dashboard snapshots publish every two seconds independently from ten
   await f.worker.stop();
 });
 
+test('a transient read failure disables execution and drains the engine before publishing its safe reason', async () => {
+  const f=fixture();await f.worker.step();
+  const engine=f.engines[0];const stop=engine.stop.bind(engine);
+  let releaseStop!:()=>void, announceStop!:()=>void;
+  const draining=new Promise<void>(resolve=>{releaseStop=resolve;});
+  const stopStarted=new Promise<void>(resolve=>{announceStop=resolve;});
+  engine.stop=async()=>{announceStop();await draining;await stop();};
+  const read=f.store.readState.bind(f.store);let failRead=true;
+  f.store.readState=async()=>{if(failRead){failRead=false;throw new CloudStoreError('READ_FAILED','private provider details must never be exposed');}return read();};
+  const previousHeartbeat=(await read()).status.heartbeatAt;
+  f.advance(2_000);const failingStep=f.worker.step();await stopStarted;
+  assert.equal(f.worker.canExecute(),false);
+  assert.equal((await read()).status.heartbeatAt,previousHeartbeat,'failure diagnostics wait until the engine has drained');
+  releaseStop();await failingStep;
+  const state=await read();
+  assert.equal(f.worker.faulted,true);assert.equal(f.worker.phase,'failed');
+  assert.equal(state.status.phase,'failed');assert.equal(state.status.failureCode,'READ_FAILED');
+  assert.equal(state.status.failedAt,f.now());assert.equal(state.status.heartbeatAt,f.now());
+  assert.equal(state.status.readiness.engine,false);assert.equal(state.status.readiness.configuration,false);
+  assert.equal(engine.stops,1);assert.equal(await f.store.acquireLease('replacement-owner'),true);
+  assert.ok(!JSON.stringify(state.status).includes('private provider details'));
+  assert.ok(!f.messages.join(' ').includes('private provider details'));
+  assert.ok(f.messages.includes('[Worker] failure: READ_FAILED'));
+  await f.worker.stop();await f.store.assertLease('replacement-owner');
+});
+
+test('unavailable diagnostic writes preserve the last snapshot and leave every execution gate closed', async () => {
+  const f=fixture();await f.worker.step();const previous=await f.store.readState();
+  const write=f.blob.write.bind(f.blob);
+  f.blob.write=async()=>{throw new CloudStoreError('WRITE_FAILED','secret transport configuration');};
+  f.advance(2_000);await f.worker.step();
+  assert.equal(f.worker.faulted,true);assert.equal(f.worker.phase,'failed');
+  assert.equal(f.worker.lastFailureCode,'WRITE_FAILED');assert.equal(f.worker.lastFailureAt,f.now());
+  assert.equal(f.worker.canExecute(),false);assert.equal(f.engines[0].stops,1);
+  await assert.rejects(f.engines[0].runtime.beforeSubmit!('SELL'),/not ready/);
+  assert.deepEqual(await f.store.readState(),previous);
+  assert.ok(!f.messages.join(' ').includes('secret transport configuration'));
+  f.blob.write=write;await f.worker.stop();
+});
+
+test('a stale worker cannot replace the new lease owner snapshot with its failure diagnostic', async () => {
+  const f=fixture();await f.worker.step();f.advance(46_000);
+  assert.equal(await f.store.acquireLease('replacement-owner'),true);
+  await f.store.mutateState(state=>{state.status={phase:'running',workerId:'replacement-owner',heartbeatAt:f.now()};},'replacement-owner');
+  const replacement=await f.store.readState();
+  await f.worker.step();
+  assert.equal(f.worker.faulted,true);assert.equal(f.worker.lastFailureCode,'LEASE_LOST');
+  assert.equal(f.worker.canExecute(),false);
+  const state=await f.store.readState();
+  assert.deepEqual(state.status,replacement.status);assert.deepEqual(state.ledger,replacement.ledger);
+  await f.store.assertLease('replacement-owner');
+  await f.worker.stop();await f.store.assertLease('replacement-owner');
+});
+
+test('unknown exception codes and messages are reduced to a fixed worker diagnostic', async () => {
+  const f=fixture();await f.worker.step();
+  const read=f.store.readState.bind(f.store);let failRead=true;
+  f.store.readState=async()=>{if(failRead){failRead=false;throw Object.assign(new Error('private raw error'),{code:'SECRET_PROVIDER_CODE'});}return read();};
+  f.advance(2_000);await f.worker.step();const state=await read();
+  assert.equal(state.status.failureCode,'WORKER_ERROR');assert.equal(state.status.failedAt,f.now());
+  assert.ok(!JSON.stringify(state.status).includes('SECRET_PROVIDER_CODE'));
+  assert.ok(!f.messages.join(' ').includes('private raw error'));
+  await f.worker.stop();
+});
+
 function liveEnv(): NodeJS.ProcessEnv {
   return {PREDICT_FUN_API_KEY:'synthetic-live-api',WALLET_PRIVATE_KEY:`0x${'01'.repeat(32)}`,
     ENABLE_LIVE_TRADING:'true',BOT_CONTROL_TOKEN:'synthetic-control-token-32-characters',BOT_CREDENTIALS_KEY:'ab'.repeat(32)};
 }
 function nextCredentials() { return {predictFunApiKey:'synthetic-rotated-api',walletPrivateKey:`0x${'02'.repeat(32)}`,predictAccountAddress:''}; }
+
+test('stored PAPER-only credentials override an environment wallet and start without signing or live readiness', async () => {
+  const env=liveEnv();const marketKey='synthetic-paper-only-api';let authChecks=0;
+  const applied: {predictFunApiKey:string;walletPrivateKey:string;predictAccountAddress:string;walletAddress:string}[]=[];
+  const f=fixture(env,{applyCredentials:credentials=>{applied.push({...credentials});},verifyCredentials:async()=>{authChecks++;throw new Error('PAPER-only credentials must never authenticate a wallet');}});
+  await f.store.mutateState(state=>{
+    state.sealedCredentials=sealCredentials({predictFunApiKey:marketKey},env);
+    state.credentialRevision=1;state.config.isPaperTrading=true;state.config.enableAutoTrade=true;
+  });
+  await f.worker.step();f.advance(10_000);await f.worker.step();
+  const state=await f.store.readState();
+  assert.deepEqual(applied,[{predictFunApiKey:marketKey,walletPrivateKey:'',predictAccountAddress:'',walletAddress:''}]);
+  assert.equal(env.WALLET_PRIVATE_KEY,liveEnv().WALLET_PRIVATE_KEY,'a valid environment signer remains present to exercise the override');
+  assert.equal(authChecks,0);assert.equal(f.engines.length,1);assert.equal(f.engines[0].starts,1);
+  assert.equal(f.engines[0].cfg.predictFunApiKey,marketKey);assert.equal(f.engines[0].cfg.isPaperTrading,true);
+  assert.equal(f.worker.phase,'running');assert.equal(f.worker.canExecute(),true);
+  assert.equal(state.status.credentialsRevisionApplied,1);assert.equal(state.status.readiness.engine,true);
+  assert.equal(state.status.readiness.predictApiKey,true);assert.equal(state.status.readiness.walletCryptoValid,false);
+  assert.equal(state.status.readiness.liveCredentials,false);assert.equal(state.status.readiness.predictAuthenticated,false);
+  assert.equal(state.status.authenticatedAt,null);assert.equal(state.status.authCredentialProofId,null);
+  assert.equal(state.status.liveAccountAddress,null);
+  await f.worker.stop();
+});
 
 test('live readiness requires successful strict authentication, not merely formatted keys', async () => {
   let allowAuth=false, checks=0;

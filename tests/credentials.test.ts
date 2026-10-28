@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Wallet } from 'ethers';
-import { credentialsFromEnvironment, getSecretStatus, sealCredentials, unsealCredentials, validateCredentials, validateSealedCredentials } from '../server/credentials';
+import { credentialProofId, credentialsFromEnvironment, getSecretStatus, sealCredentials, unsealCredentials, validateCredentials, validateSealedCredentials } from '../server/credentials';
 
 const key = '01'.repeat(32); // Synthetic, never funded or used on a network.
 const input = { predictFunApiKey: 'synthetic-predict-key', walletPrivateKey: key, predictAccountAddress: '' };
@@ -51,4 +51,18 @@ test('environment compatibility derives the EOA signer and treats incomplete bun
   assert.equal(credentialsFromEnvironment({PREDICT_FUN_API_KEY:input.predictFunApiKey}),null);
   const value=credentialsFromEnvironment({PREDICT_FUN_API_KEY:input.predictFunApiKey,WALLET_PRIVATE_KEY:key});
   assert.equal(value!.walletAddress,new Wallet(`0x${key}`).address);
+});
+
+test('PAPER API-only credentials round trip encrypted without implying a signer or live auth proof', () => {
+  const paper = {predictFunApiKey:'synthetic-paper-market-key',walletPrivateKey:'',predictAccountAddress:''};
+  const normalized = validateCredentials(paper);
+  assert.deepEqual(normalized,{...paper,walletAddress:''});
+  assert.deepEqual(validateCredentials({predictFunApiKey:paper.predictFunApiKey}),normalized);
+  const encrypted = sealCredentials(paper,dedicatedEnv);
+  assert.ok(!JSON.stringify(encrypted).includes(paper.predictFunApiKey));
+  assert.deepEqual(unsealCredentials(encrypted,dedicatedEnv),normalized);
+  assert.deepEqual(getSecretStatus(normalized),{predictFunApiKeyConfigured:true,walletPrivateKeyConfigured:false,predictAccountAddressConfigured:false,walletAddress:null});
+  assert.throws(()=>credentialProofId(normalized,passwordEnv),(error:any)=>error.code==='INVALID_INPUT');
+  assert.throws(()=>validateCredentials({...paper,predictAccountAddress:'0x0000000000000000000000000000000000000123'}),(error:any)=>error.code==='INVALID_INPUT');
+  assert.throws(()=>validateCredentials({...paper,walletPrivateKey:'0x'}),(error:any)=>error.code==='INVALID_INPUT');
 });

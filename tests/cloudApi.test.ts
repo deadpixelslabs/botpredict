@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createServer, type Server } from 'node:http';
 import { createCloudApi, cloudSnapshot, type CloudApiStore } from '../server/cloudApi';
 import type { CloudState } from '../server/cloudStore';
-import { credentialProofId, sealCredentials, validateCredentials } from '../server/credentials';
+import { credentialProofId, sealCredentials, unsealCredentials, validateCredentials } from '../server/credentials';
 
 const now = Date.UTC(2026,9,29,12);
 const token = 'synthetic-operator-token-for-http-test';
@@ -94,7 +94,26 @@ test('stale or absent daemon cannot report running quotes, current prices, or fr
   state.status = {heartbeatAt:now-31000,phase:'running',currentPrice:90000,walletBalanceUsdt:100,quoteAgeMs:50,lastPredictOdds:{upOdds:2,downOdds:2,timestamp:now-31000},logs:['old']};
   const result = cloudSnapshot(state,env,now);
   assert.equal(result.workerAvailable,false); assert.equal(result.workerPhase,'offline'); assert.equal(result.tradingActive,false);
+  assert.equal(result.workerLastPhase,'running');
   assert.equal(result.currentPrice,null); assert.equal(result.walletBalanceUsdt,null); assert.equal(result.lastPredictOdds,null); assert.deepEqual(result.logs,[]);
+});
+test('last known daemon phase is a bounded whitelist even when stale or missing',() => {
+  const state = initial();
+  state.status = {heartbeatAt:now-31000,phase:'waiting_for_api_key'};
+  assert.equal(cloudSnapshot(state,env,now).workerLastPhase,'waiting_for_api_key');
+  for(const phase of ['private-secret-unrecognized-phase',{},undefined]) {
+    state.status = {heartbeatAt:now-31000,phase};
+    assert.equal(cloudSnapshot(state,env,now).workerLastPhase,'offline');
+  }
+  for(const failureCode of ['READ_FAILED','WRITE_FAILED','LEASE_LOST','CONFLICT','CORRUPT_STATE','NOT_CONFIGURED','WORKER_ERROR']) {
+    state.status={heartbeatAt:now-31000,phase:'failed',failureCode,failedAt:now-30000};
+    const snapshot=cloudSnapshot(state,env,now);
+    assert.equal(snapshot.workerLastPhase,'failed'); assert.equal(snapshot.workerFailureCode,failureCode); assert.equal(snapshot.workerFailedAt,now-30000);
+  }
+  state.status={phase:'failed',failureCode:'private-sensitive-exception',failedAt:Infinity};
+  const unknown=cloudSnapshot(state,env,now);
+  assert.equal(unknown.workerFailureCode,null); assert.equal(unknown.workerFailedAt,null);
+  assert.ok(!JSON.stringify(unknown).includes('private-sensitive-exception'));
 });
 test('performance is isolated by explicit mode and verified fill/resolution fields',() => {
   const state = initial();
@@ -195,4 +214,51 @@ test('environment credential rotation invalidates old authentication proof even 
   const rotatedEnv = {...oldEnv,PREDICT_FUN_API_KEY:'rotated-environment-api-key'};
   assert.equal(cloudSnapshot(state,rotatedEnv,now).liveOnline,false);
   assert.equal(cloudSnapshot(state,rotatedEnv,now).predictAuthenticated,false);
+});
+
+test('API key alone saves encrypted PAPER setup, invalidates old activation and explicitly blocks LIVE',async context => {
+  const f = await httpFixture(context,{...credentialEnv,WALLET_PRIVATE_KEY:credentialBody.WALLET_PRIVATE_KEY,PREDICT_FUN_API_KEY:'different-environment-wallet-api'});
+  const paperBody = {PREDICT_FUN_API_KEY:'synthetic-paper-only-api',WALLET_PRIVATE_KEY:'',PREDICT_ACCOUNT_ADDRESS:''};
+  f.store.state.config.enableAutoTrade = true; f.store.state.config.isPaperTrading = false;
+  f.store.state.commands = [{id:'old-live-start',type:'config',createdAt:now-1000,status:'pending',payload:{isPaperTrading:false,enableAutoTrade:true}}];
+  const saved = await f.request('/api/credentials',{method:'POST',body:JSON.stringify(paperBody)});
+  assert.equal(saved.status,200); assert.equal(saved.body.saved,true); assert.equal(saved.body.credentialsStored,true);
+  assert.equal(saved.body.credentialRevision,1); assert.equal(saved.body.credentialValidation,'paper_ready');
+  assert.equal(saved.body.predictApiConfigured,true); assert.equal(saved.body.walletConfigured,false);
+  assert.equal(saved.body.walletPrivateKeyConfigured,false); assert.equal(saved.body.walletAddress,null);
+  assert.equal(f.store.state.config.enableAutoTrade,false); assert.equal(f.store.state.config.isPaperTrading,true);
+  assert.equal(saved.body.isPaperTrading,true); assert.equal(f.store.state.commands[0].status,'failed');
+  const plaintext = unsealCredentials(f.store.state.sealedCredentials,credentialEnv);
+  assert.equal(plaintext.predictFunApiKey,paperBody.PREDICT_FUN_API_KEY); assert.equal(plaintext.walletPrivateKey,''); assert.equal(plaintext.walletAddress,'');
+  assert.ok(!JSON.stringify(f.store.state).includes(paperBody.PREDICT_FUN_API_KEY));
+  const status = await f.request('/api/credentials');
+  const config = await f.request('/api/config');
+  const stats = await f.request('/api/stats');
+  for(const result of [saved,status,config,stats]) {
+    assert.equal(result.body.predictApiConfigured,true); assert.equal(result.body.walletConfigured,false);
+    const text=JSON.stringify(result.body); assert.ok(!text.includes(paperBody.PREDICT_FUN_API_KEY)); assert.ok(!text.includes(credentialBody.WALLET_PRIVATE_KEY)); assert.ok(!text.includes('ciphertext'));
+  }
+  assert.equal(stats.body.liveOnline,false); assert.equal(stats.body.predictAuthenticated,false);
+  assert.equal((await f.request('/api/config',{method:'POST',body:JSON.stringify({isPaperTrading:true,enableAutoTrade:true})})).status,202);
+  const count = f.store.state.commands.length;
+  for(const payload of [{isPaperTrading:false},{isLiveTrading:true},{isPaperTrading:false,enableAutoTrade:true}]) {
+    const live = await f.request('/api/config',{method:'POST',body:JSON.stringify(payload)});
+    assert.equal(live.status,400); assert.equal(live.body.code,'LIVE_WALLET_REQUIRED'); assert.match(live.body.error,/WALLET_PRIVATE_KEY/);
+  }
+  f.store.state.config.isPaperTrading=false;
+  const resume = await f.request('/api/config',{method:'POST',body:JSON.stringify({enableAutoTrade:true})});
+  assert.equal(resume.status,400); assert.equal(resume.body.code,'LIVE_WALLET_REQUIRED');
+  assert.equal(f.store.state.commands.length,count);
+});
+
+test('switching to API-only PAPER credentials cannot replace the wallet of an unresolved LIVE order',async context => {
+  const f = await httpFixture(context,credentialEnv);
+  f.store.state.sealedCredentials=sealCredentials(credentialInput,credentialEnv); f.store.state.credentialRevision=2;
+  const envelope=JSON.stringify(f.store.state.sealedCredentials);
+  for(const extra of [{isFilled:true},{submissionUncertain:true},{isCancelled:true}]) {
+    f.store.state.ledger=[{id:'open-live',mode:'live',resolved:false,...extra}];
+    const result=await f.request('/api/credentials',{method:'POST',body:JSON.stringify({PREDICT_FUN_API_KEY:'synthetic-paper-only-api',WALLET_PRIVATE_KEY:'',PREDICT_ACCOUNT_ADDRESS:''})});
+    assert.equal(result.status,409); assert.equal(result.body.code,'OPEN_LIVE_POSITIONS');
+    assert.equal(f.store.state.credentialRevision,2); assert.equal(JSON.stringify(f.store.state.sealedCredentials),envelope);
+  }
 });

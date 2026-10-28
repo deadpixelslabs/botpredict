@@ -10,7 +10,7 @@ Paket ini dimulai dalam **paper mode, auto-trade berhenti**. Trading baru diakti
 2. Buat/connect **Vercel Blob private**, sebaiknya region Tokyo `hnd1`. Hubungkan ke project. Pastikan environment produksi mendapat `BLOB_STORE_ID`. SDK memakai OIDC Vercel; daemon membaca token terbaru setiap operasi. Untuk penggunaan lokal dapat memakai `BLOB_READ_WRITE_TOKEN` server-side.
 3. Tambahkan environment produksi `BOT_CONTROL_TOKEN` acak minimal 24 karakter. Untuk mengizinkan tombol **Mulai Live**, set `ENABLE_LIVE_TRADING=true`; nilai `false` adalah kill switch server yang memblokir aktivasi live. Key Predict dan wallet dapat diisi melalui menu aplikasi setelah deploy, tanpa dimasukkan ke environment satu per satu. Jangan memakai key dari ZIP awal.
 4. Deploy ke **Production**. Preview deployments hanya menjalankan dashboard/API; Vercel Daemons belum berjalan di preview.
-5. Buka URL deployment dan login memakai `BOT_CONTROL_TOKEN`. Pada menu kredensial isi `PREDICT_FUN_API_KEY`, `WALLET_PRIVATE_KEY`, dan `PREDICT_ACCOUNT_ADDRESS` (deposit address smart account). Untuk EOA, kosongkan account address; alamat signer diturunkan dari private key. Klik simpan/validasi, tunggu worker mengakui revisi kredensial, lalu gunakan tombol **Mulai Live**. **Pause** menghentikan entry baru; pemantauan dan exit posisi tetap diperlukan.
+5. Buka URL deployment dan login memakai `BOT_CONTROL_TOKEN`. Untuk uji paper, pilih **PAPER**, isi `PREDICT_FUN_API_KEY`, lalu simpan. Private key dan account address tidak diperlukan. Tunggu konfirmasi **TERSIMPAN** dan heartbeat daemon sebelum **Mulai paper**. Untuk live, pilih setup **LIVE**, isi API key, `WALLET_PRIVATE_KEY`, dan `PREDICT_ACCOUNT_ADDRESS` (deposit address smart account). Untuk EOA, kosongkan account address; alamat signer diturunkan dari private key. Simpan, tunggu worker mengakui revisi kredensial, lalu gunakan tombol **Mulai Live**. **Pause** menghentikan entry baru; pemantauan dan exit posisi tetap diperlukan.
 
 Alternatif deploy lewat CLI Vercel yang mendukung Daemons (64.3.0 atau lebih baru):
 
@@ -78,7 +78,7 @@ docker run --env-file .env --init predict-fun-worker
 
 ## Menu kredensial dan live
 
-Tiga input tersedia di dashboard: `PREDICT_FUN_API_KEY`, `WALLET_PRIVATE_KEY`, dan `PREDICT_ACCOUNT_ADDRESS`. Input key disembunyikan, hanya dikirim melalui API operator, lalu dikosongkan. API tidak pernah mengirim kembali nilai key ke browser. Password operator hanya berada di memori tab. Gunakan URL HTTPS Vercel.
+Tiga input tersedia di dashboard: `PREDICT_FUN_API_KEY`, `WALLET_PRIVATE_KEY`, dan `PREDICT_ACCOUNT_ADDRESS`. Pilihan PAPER hanya memakai API key dan menyimpan bundle tanpa signer; bundle ini tidak dapat menghasilkan bukti autentikasi atau mengaktifkan live. Pilihan LIVE membutuhkan private key yang valid. Input key disembunyikan, hanya dikirim melalui API operator, lalu dikosongkan. Lihat status TERSIMPAN, bukan isi kolom yang dikosongkan, untuk memeriksa penyimpanan. API tidak pernah mengirim kembali nilai key ke browser. Password operator hanya berada di memori tab. Gunakan URL HTTPS Vercel.
 
 Kredensial disimpan sebagai ciphertext AES-256-GCM di Blob private. Kunci enkripsi berasal dari `BOT_CREDENTIALS_KEY` server (opsional, 64 karakter hex) atau diturunkan dari token operator dengan salt per envelope. Jika token operator diubah tanpa kunci enkripsi terpisah, kredensial perlu dimasukkan ulang. Error dekripsi menghentikan submit, bukan beralih diam-diam ke key lain.
 

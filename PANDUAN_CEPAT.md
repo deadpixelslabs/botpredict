@@ -10,7 +10,7 @@
    - `PREDICT_FUN_API_KEY`
    - `WALLET_PRIVATE_KEY`
    - `PREDICT_ACCOUNT_ADDRESS`: deposit address smart account Predict; kosongkan bila memakai EOA.
-6. Klik **Simpan & validasi**, tunggu worker membaca kredensial, lalu klik **Mulai Live**. Status key tersimpan tidak berarti order sudah berhasil.
+6. Untuk PAPER, pilih setup **PAPER** dan isi API key saja. Untuk LIVE, pilih setup **LIVE** lalu isi wallet. Klik **Simpan kredensial**, pastikan status **TERSIMPAN**, tunggu heartbeat worker, lalu klik **Mulai paper** atau **Mulai Live**. Kolom key dikosongkan setelah pengiriman; status tersimpan tidak berarti akun sudah terautentikasi atau order sudah berhasil.
 
 `LIVE ONLINE` membutuhkan heartbeat, autentikasi untuk wallet/key yang sama, saldo dan quote segar, serta lease valid. Jika status belum siap, periksa indikator dan log. Wallet tetap memerlukan saldo dan approvals exchange yang benar. Bot tidak melakukan approval, redeem, atau test trade otomatis.
 
