@@ -1,0 +1,11 @@
+--- server/arbitrage-engine.ts
++++ server/arbitrage-engine.ts
+@@ -247,6 +247,8 @@
+   }
+ 
+   public async start(): Promise<void> {
++    if ((this as any).isRunning) return;
++    (this as any).isRunning = true;
+     this.log('🚀 Starting arbitrage engine...');
+     
+     // Connect to Binance WebSocket

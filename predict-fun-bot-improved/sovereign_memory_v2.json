@@ -1,0 +1,2396 @@
+{
+  "version": "2.0",
+  "lastUpdated": 1783379027112,
+  "totalTrades": 30,
+  "wins": 6,
+  "losses": 10,
+  "trades": [
+    {
+      "id": "1783028791581_UP",
+      "timestamp": 1783028791581,
+      "direction": "UP",
+      "outcome": "LOSS",
+      "session": "DEAD_ZONE",
+      "regime": "WEAK_BULL",
+      "mathSignal": {
+        "direction": "HOLD",
+        "confidence": 0.49541838905512203,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.73,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_weak_bull",
+        "session_dead_zone",
+        "bb_squeeze",
+        "ultra_compression",
+        "dir_up"
+      ],
+      "similarTradeIds": [],
+      "knnVote": {
+        "wins": 0,
+        "losses": 0,
+        "k": 0
+      },
+      "presetUsed": "AGGRESSIVE",
+      "winMargin": 0.15,
+      "reflectionNote": "Kombinasi pattern yang tidak konsisten (BWR 33% semua) dan Math Signal HOLD mungkin menyebabkan keputusan salah. Debate Winner BULL vs News +0.30 mungkin terlalu optimis."
+    },
+    {
+      "id": "1783029011398_UP",
+      "timestamp": 1783029011398,
+      "direction": "UP",
+      "outcome": "WIN",
+      "session": "DEAD_ZONE",
+      "regime": "RANGING",
+      "mathSignal": {
+        "direction": "UP",
+        "confidence": 0.7542091369825871,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.7085714285714285,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_ranging",
+        "session_dead_zone",
+        "bb_squeeze",
+        "ultra_compression",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783028791581_UP"
+      ],
+      "knnVote": {
+        "wins": 0,
+        "losses": 1,
+        "k": 1
+      },
+      "presetUsed": "NORMAL",
+      "winMargin": 0.15,
+      "reflectionNote": "Trade menang karena kombinasi sinyal matematis (75.4%) dan dukungan dari BULL debate, meskipun KNN kurang akurat."
+    },
+    {
+      "id": "1783029312380_UP",
+      "timestamp": 1783029312380,
+      "direction": "UP",
+      "session": "DEAD_ZONE",
+      "regime": "RANGING",
+      "mathSignal": {
+        "direction": "UP",
+        "confidence": 0.6092727694860709,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.73,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_ranging",
+        "session_dead_zone",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783028791581_UP",
+        "1783029011398_UP"
+      ],
+      "knnVote": {
+        "wins": 1,
+        "losses": 1,
+        "k": 2
+      },
+      "presetUsed": "HYPER",
+      "winMargin": 0.15
+    },
+    {
+      "id": "1783029543124_UP",
+      "timestamp": 1783029543124,
+      "direction": "UP",
+      "session": "DEAD_ZONE",
+      "regime": "RANGING",
+      "mathSignal": {
+        "direction": "UP",
+        "confidence": 0.6735559211632548,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.73,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_ranging",
+        "session_dead_zone",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783029011398_UP",
+        "1783028791581_UP"
+      ],
+      "knnVote": {
+        "wins": 1,
+        "losses": 1,
+        "k": 2
+      },
+      "presetUsed": "HYPER",
+      "winMargin": 0.15,
+      "outcome": "WIN",
+      "reflectionNote": "Trade menang karena kombinasi sinyal matematis (67.4%) dan dukungan dari BULL debate, meskipun sesi DEAD_ZONE cenderung rapuh."
+    },
+    {
+      "id": "1783375157868_UP",
+      "timestamp": 1783375157868,
+      "direction": "UP",
+      "session": "DEAD_ZONE",
+      "regime": "STRONG_BULL",
+      "mathSignal": {
+        "direction": "UP",
+        "confidence": 0.6242119549803763,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.73,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_strong_bull",
+        "session_dead_zone",
+        "liquidity_sweep_bear",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783028791581_UP",
+        "1783029011398_UP"
+      ],
+      "knnVote": {
+        "wins": 1,
+        "losses": 1,
+        "k": 2
+      },
+      "presetUsed": "HYPER",
+      "winMargin": 0.15
+    },
+    {
+      "id": "1783375213667_UP",
+      "timestamp": 1783375213667,
+      "direction": "UP",
+      "session": "DEAD_ZONE",
+      "regime": "STRONG_BULL",
+      "mathSignal": {
+        "direction": "UP",
+        "confidence": 0.6339396660509906,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.7514285714285714,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_strong_bull",
+        "session_dead_zone",
+        "bb_squeeze",
+        "rsi_overbought",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783029543124_UP",
+        "1783028791581_UP",
+        "1783029011398_UP"
+      ],
+      "knnVote": {
+        "wins": 2,
+        "losses": 1,
+        "k": 3
+      },
+      "presetUsed": "NORMAL",
+      "winMargin": 0.15
+    },
+    {
+      "id": "1783375315411_UP",
+      "timestamp": 1783375315411,
+      "direction": "UP",
+      "outcome": "LOSS",
+      "session": "DEAD_ZONE",
+      "regime": "STRONG_BULL",
+      "mathSignal": {
+        "direction": "UP",
+        "confidence": 0.5758605834643065,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.7514285714285714,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_strong_bull",
+        "session_dead_zone",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783029543124_UP",
+        "1783028791581_UP",
+        "1783029011398_UP"
+      ],
+      "knnVote": {
+        "wins": 2,
+        "losses": 1,
+        "k": 3
+      },
+      "presetUsed": "NORMAL",
+      "winMargin": 0.15,
+      "reflectionNote": "Kombinasi DEAD_ZONE dan STRONG_BULL membuat sinyal UP terlalu optimis, sementara BULL debate winner mungkin terpengaruh oleh overconfidence."
+    },
+    {
+      "id": "1783375509867_UP",
+      "timestamp": 1783375509867,
+      "direction": "UP",
+      "session": "DEAD_ZONE",
+      "regime": "STRONG_BULL",
+      "mathSignal": {
+        "direction": "HOLD",
+        "confidence": 0.42451266377451363,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.73,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_strong_bull",
+        "session_dead_zone",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783375315411_UP",
+        "1783029543124_UP",
+        "1783028791581_UP",
+        "1783029011398_UP"
+      ],
+      "knnVote": {
+        "wins": 2,
+        "losses": 2,
+        "k": 4
+      },
+      "presetUsed": "HYPER",
+      "winMargin": 0.15
+    },
+    {
+      "id": "1783375753458_UP",
+      "timestamp": 1783375753458,
+      "direction": "UP",
+      "outcome": "LOSS",
+      "session": "DEAD_ZONE",
+      "regime": "STRONG_BULL",
+      "mathSignal": {
+        "direction": "HOLD",
+        "confidence": 0.48406708360298667,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.73,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_strong_bull",
+        "session_dead_zone",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783375315411_UP",
+        "1783029543124_UP",
+        "1783028791581_UP",
+        "1783029011398_UP"
+      ],
+      "knnVote": {
+        "wins": 2,
+        "losses": 2,
+        "k": 4
+      },
+      "presetUsed": "HYPER",
+      "winMargin": 0.15,
+      "reflectionNote": "Kombinasi BWR tinggi pada pattern bb_squeeze dan dir_up mungkin terlalu optimis untuk STRONG_BULL, sementara HOLD@48.4% tidak mencakup risiko cukup."
+    },
+    {
+      "id": "1783375818349_UP",
+      "timestamp": 1783375818349,
+      "direction": "UP",
+      "outcome": "WIN",
+      "session": "DEAD_ZONE",
+      "regime": "STRONG_BULL",
+      "mathSignal": {
+        "direction": "HOLD",
+        "confidence": 0.49241907016195774,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.6835714285714286,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_strong_bull",
+        "session_dead_zone",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783375753458_UP",
+        "1783375315411_UP",
+        "1783029543124_UP",
+        "1783028791581_UP",
+        "1783029011398_UP"
+      ],
+      "knnVote": {
+        "wins": 2,
+        "losses": 3,
+        "k": 5
+      },
+      "presetUsed": "AGGRESSIVE",
+      "winMargin": 0.15,
+      "reflectionNote": "Trade berhasil karena kombinasi regime STRONG_BULL dan BB Squeeze memberikan sinyal kuat, meskipun KNN kurang akurat."
+    },
+    {
+      "id": "1783376109435_UP",
+      "timestamp": 1783376109435,
+      "direction": "UP",
+      "session": "DEAD_ZONE",
+      "regime": "STRONG_BULL",
+      "mathSignal": {
+        "direction": "UP",
+        "confidence": 0.5726605250416374,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.73,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_strong_bull",
+        "session_dead_zone",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783375818349_UP",
+        "1783375753458_UP",
+        "1783375315411_UP",
+        "1783029543124_UP",
+        "1783028791581_UP",
+        "1783029011398_UP"
+      ],
+      "knnVote": {
+        "wins": 3,
+        "losses": 3,
+        "k": 6
+      },
+      "presetUsed": "AGGRESSIVE",
+      "winMargin": 0.15
+    },
+    {
+      "id": "1783376167785_UP",
+      "timestamp": 1783376167785,
+      "direction": "UP",
+      "session": "DEAD_ZONE",
+      "regime": "STRONG_BULL",
+      "mathSignal": {
+        "direction": "UP",
+        "confidence": 0.5638719798235098,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.73,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_strong_bull",
+        "session_dead_zone",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783375818349_UP",
+        "1783375753458_UP",
+        "1783375315411_UP",
+        "1783029543124_UP",
+        "1783028791581_UP",
+        "1783029011398_UP"
+      ],
+      "knnVote": {
+        "wins": 3,
+        "losses": 3,
+        "k": 6
+      },
+      "presetUsed": "AGGRESSIVE",
+      "winMargin": 0.15
+    },
+    {
+      "id": "1783376193093_UP",
+      "timestamp": 1783376193094,
+      "direction": "UP",
+      "outcome": "WIN",
+      "session": "DEAD_ZONE",
+      "regime": "STRONG_BULL",
+      "mathSignal": {
+        "direction": "UP",
+        "confidence": 0.568642722608867,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.73,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_strong_bull",
+        "session_dead_zone",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783375818349_UP",
+        "1783375753458_UP",
+        "1783375315411_UP",
+        "1783029543124_UP",
+        "1783028791581_UP",
+        "1783029011398_UP"
+      ],
+      "knnVote": {
+        "wins": 3,
+        "losses": 3,
+        "k": 6
+      },
+      "presetUsed": "AGGRESSIVE",
+      "winMargin": 0.15,
+      "reflectionNote": "Sinyal Math dan Debate Winner sangat andal dalam trade ini, dengan Math Signal mencapai 56.9% dan Debate Winner mendukung arah UP."
+    },
+    {
+      "id": "1783376415565_UP",
+      "timestamp": 1783376415565,
+      "direction": "UP",
+      "session": "DEAD_ZONE",
+      "regime": "STRONG_BULL",
+      "mathSignal": {
+        "direction": "UP",
+        "confidence": 0.558305983181645,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.7692857142857142,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_strong_bull",
+        "session_dead_zone",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783376193093_UP",
+        "1783375818349_UP",
+        "1783375753458_UP",
+        "1783375315411_UP",
+        "1783029543124_UP",
+        "1783028791581_UP",
+        "1783029011398_UP"
+      ],
+      "knnVote": {
+        "wins": 4,
+        "losses": 3,
+        "k": 7
+      },
+      "presetUsed": "NORMAL",
+      "winMargin": 0.15
+    },
+    {
+      "id": "1783376593699_UP",
+      "timestamp": 1783376593699,
+      "direction": "UP",
+      "outcome": "LOSS",
+      "session": "DEAD_ZONE",
+      "regime": "STRONG_BULL",
+      "mathSignal": {
+        "direction": "UP",
+        "confidence": 0.5620866280986775,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.7692857142857142,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_strong_bull",
+        "session_dead_zone",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783376193093_UP",
+        "1783375818349_UP",
+        "1783375753458_UP",
+        "1783375315411_UP",
+        "1783029543124_UP",
+        "1783028791581_UP",
+        "1783029011398_UP"
+      ],
+      "knnVote": {
+        "wins": 4,
+        "losses": 3,
+        "k": 7
+      },
+      "presetUsed": "NORMAL",
+      "winMargin": 0.15,
+      "reflectionNote": "Kombinasi BWR tinggi pada bb_squeeze dan dir_up mungkin terlalu optimis untuk STRONG_BULL, sementara DEAD_ZONE seringkali volatil."
+    },
+    {
+      "id": "1783376707062_UP",
+      "timestamp": 1783376707062,
+      "direction": "UP",
+      "outcome": "LOSS",
+      "session": "DEAD_ZONE",
+      "regime": "STRONG_BULL",
+      "mathSignal": {
+        "direction": "HOLD",
+        "confidence": 0.4956347372704688,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.7085714285714285,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_strong_bull",
+        "session_dead_zone",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783376593699_UP",
+        "1783376193093_UP",
+        "1783375818349_UP",
+        "1783375753458_UP",
+        "1783375315411_UP",
+        "1783028791581_UP",
+        "1783029543124_UP"
+      ],
+      "knnVote": {
+        "wins": 3,
+        "losses": 4,
+        "k": 7
+      },
+      "presetUsed": "HYPER",
+      "winMargin": 0.15,
+      "reflectionNote": "Kombinasi bayesian WR tinggi untuk semua pattern (38-45%) membuat sistem terlalu agresif, sementara KNN vote (3W/4L) menunjukkan overfitting."
+    },
+    {
+      "id": "1783377145933_UP",
+      "timestamp": 1783377145933,
+      "direction": "UP",
+      "session": "DEAD_ZONE",
+      "regime": "WEAK_BULL",
+      "mathSignal": {
+        "direction": "HOLD",
+        "confidence": 0.5249667948843014,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.6518253968253968,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_weak_bull",
+        "session_dead_zone",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783376707062_UP",
+        "1783376193093_UP",
+        "1783375753458_UP",
+        "1783375818349_UP",
+        "1783376593699_UP",
+        "1783375315411_UP",
+        "1783028791581_UP"
+      ],
+      "knnVote": {
+        "wins": 2,
+        "losses": 5,
+        "k": 7
+      },
+      "presetUsed": "AGGRESSIVE",
+      "winMargin": 0.15
+    },
+    {
+      "id": "1783377166368_UP",
+      "timestamp": 1783377166368,
+      "direction": "UP",
+      "outcome": "LOSS",
+      "session": "DEAD_ZONE",
+      "regime": "WEAK_BULL",
+      "mathSignal": {
+        "direction": "HOLD",
+        "confidence": 0.5249667948843014,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.6518253968253968,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_weak_bull",
+        "session_dead_zone",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783376707062_UP",
+        "1783376193093_UP",
+        "1783375753458_UP",
+        "1783375818349_UP",
+        "1783376593699_UP",
+        "1783375315411_UP",
+        "1783028791581_UP"
+      ],
+      "knnVote": {
+        "wins": 2,
+        "losses": 5,
+        "k": 7
+      },
+      "presetUsed": "AGGRESSIVE",
+      "winMargin": 0.15,
+      "reflectionNote": "Kombinasi pattern bb_squeeze dan dir_up mungkin terlalu agresif untuk regime WEAK_BULL, sementara KNN vote (2W/5L) menunjukkan overfitting."
+    },
+    {
+      "id": "1783377315193_UP",
+      "timestamp": 1783377315193,
+      "direction": "UP",
+      "outcome": "WIN",
+      "session": "DEAD_ZONE",
+      "regime": "WEAK_BULL",
+      "mathSignal": {
+        "direction": "HOLD",
+        "confidence": 0.40927457816140983,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.6407142857142857,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_weak_bull",
+        "session_dead_zone",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783377166368_UP",
+        "1783375753458_UP",
+        "1783376707062_UP",
+        "1783375818349_UP",
+        "1783376193093_UP",
+        "1783375315411_UP",
+        "1783376593699_UP"
+      ],
+      "knnVote": {
+        "wins": 2,
+        "losses": 5,
+        "k": 7
+      },
+      "presetUsed": "NORMAL",
+      "winMargin": 0.15,
+      "reflectionNote": "Trade berhasil karena kombinasi BULL debate dan news positif, meskipun math signal HOLD. Kombinasi pattern dir_up dan bb_squeeze menjadi kunci kemenangan."
+    },
+    {
+      "id": "1783377617195_UP",
+      "timestamp": 1783377617195,
+      "direction": "UP",
+      "session": "DEAD_ZONE",
+      "regime": "STRONG_BULL",
+      "mathSignal": {
+        "direction": "UP",
+        "confidence": 0.6211577905171869,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.6972077922077922,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_strong_bull",
+        "session_dead_zone",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783377315193_UP",
+        "1783377166368_UP",
+        "1783375753458_UP",
+        "1783375818349_UP",
+        "1783376193093_UP",
+        "1783375315411_UP",
+        "1783376707062_UP"
+      ],
+      "knnVote": {
+        "wins": 3,
+        "losses": 4,
+        "k": 7
+      },
+      "presetUsed": "HYPER",
+      "winMargin": 0.15
+    },
+    {
+      "id": "1783377917345_UP",
+      "timestamp": 1783377917345,
+      "direction": "UP",
+      "outcome": "LOSS",
+      "session": "DEAD_ZONE",
+      "regime": "STRONG_BULL",
+      "mathSignal": {
+        "direction": "UP",
+        "confidence": 0.6030384717891412,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.6972077922077922,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_strong_bull",
+        "session_dead_zone",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783377315193_UP",
+        "1783377166368_UP",
+        "1783375753458_UP",
+        "1783375818349_UP",
+        "1783376707062_UP",
+        "1783376193093_UP",
+        "1783375315411_UP"
+      ],
+      "knnVote": {
+        "wins": 3,
+        "losses": 4,
+        "k": 7
+      },
+      "presetUsed": "HYPER",
+      "winMargin": 0.15,
+      "reflectionNote": "Kombinasi BWR tinggi pada bb_squeeze dan dir_up mungkin terlalu optimis untuk STRONG_BULL, sementara KNN vote lemah (3W/4L) menunjukkan overfitting."
+    },
+    {
+      "id": "1783377922942_UP",
+      "timestamp": 1783377922942,
+      "direction": "UP",
+      "session": "DEAD_ZONE",
+      "regime": "STRONG_BULL",
+      "mathSignal": {
+        "direction": "UP",
+        "confidence": 0.6030384717891412,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.6972077922077922,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_strong_bull",
+        "session_dead_zone",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783377315193_UP",
+        "1783377166368_UP",
+        "1783375753458_UP",
+        "1783375818349_UP",
+        "1783376707062_UP",
+        "1783376193093_UP",
+        "1783375315411_UP"
+      ],
+      "knnVote": {
+        "wins": 3,
+        "losses": 4,
+        "k": 7
+      },
+      "presetUsed": "HYPER",
+      "winMargin": 0.15
+    },
+    {
+      "id": "1783377951149_UP",
+      "timestamp": 1783377951149,
+      "direction": "UP",
+      "outcome": "WIN",
+      "session": "DEAD_ZONE",
+      "regime": "STRONG_BULL",
+      "mathSignal": {
+        "direction": "UP",
+        "confidence": 0.6829272935190795,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.6861548366007652,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_strong_bull",
+        "session_dead_zone",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783377917345_UP",
+        "1783377315193_UP",
+        "1783377166368_UP",
+        "1783375753458_UP",
+        "1783376707062_UP",
+        "1783375818349_UP",
+        "1783376193093_UP"
+      ],
+      "knnVote": {
+        "wins": 3,
+        "losses": 4,
+        "k": 7
+      },
+      "presetUsed": "AGGRESSIVE",
+      "winMargin": 0.15,
+      "reflectionNote": "Sinyal terandalkan adalah regime_strong_bull dan bb_squeeze, dengan BWR tinggi dan konsistensi dalam prediksi arah UP."
+    },
+    {
+      "id": "1783378207777_UP",
+      "timestamp": 1783378207777,
+      "direction": "UP",
+      "session": "DEAD_ZONE",
+      "regime": "STRONG_BULL",
+      "mathSignal": {
+        "direction": "UP",
+        "confidence": 0.6560501515749277,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.7365572478247644,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_strong_bull",
+        "session_dead_zone",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783375753458_UP",
+        "1783375315411_UP",
+        "1783375818349_UP",
+        "1783377917345_UP",
+        "1783376193093_UP",
+        "1783377951149_UP",
+        "1783377315193_UP"
+      ],
+      "knnVote": {
+        "wins": 4,
+        "losses": 3,
+        "k": 7
+      },
+      "presetUsed": "NORMAL",
+      "winMargin": 0.15
+    },
+    {
+      "id": "1783378483972_DOWN",
+      "timestamp": 1783378483972,
+      "direction": "DOWN",
+      "outcome": "LOSS",
+      "session": "DEAD_ZONE",
+      "regime": "WEAK_BULL",
+      "mathSignal": {
+        "direction": "DOWN",
+        "confidence": 0.6743975865143758,
+        "voteScore": 0
+      },
+      "debateWinner": "BEAR",
+      "newsScore": 0.3,
+      "confidence": 0.73,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_weak_bull",
+        "session_dead_zone",
+        "liquidity_sweep_bear",
+        "bear_engulf",
+        "bb_squeeze",
+        "dir_down"
+      ],
+      "similarTradeIds": [],
+      "knnVote": {
+        "wins": 0,
+        "losses": 0,
+        "k": 0
+      },
+      "presetUsed": "NORMAL",
+      "winMargin": 0.15,
+      "reflectionNote": "Kombinasi pattern bb_squeeze dan dir_down mungkin terlalu agresif untuk regime WEAK_BULL, sementara news impact +0.30 tidak cukup untuk membalikkan trend."
+    },
+    {
+      "id": "1783378513532_UP",
+      "timestamp": 1783378513532,
+      "direction": "UP",
+      "session": "DEAD_ZONE",
+      "regime": "RANGING",
+      "mathSignal": {
+        "direction": "UP",
+        "confidence": 0.5584331217741814,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.7418131868131868,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_ranging",
+        "session_dead_zone",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783377917345_UP",
+        "1783377951149_UP",
+        "1783375753458_UP",
+        "1783375818349_UP",
+        "1783376193093_UP",
+        "1783377315193_UP",
+        "1783377166368_UP"
+      ],
+      "knnVote": {
+        "wins": 4,
+        "losses": 3,
+        "k": 7
+      },
+      "presetUsed": "AGGRESSIVE",
+      "winMargin": 0.15
+    },
+    {
+      "id": "1783378691950_UP",
+      "timestamp": 1783378691950,
+      "direction": "UP",
+      "outcome": "LOSS",
+      "session": "DEAD_ZONE",
+      "regime": "RANGING",
+      "mathSignal": {
+        "direction": "UP",
+        "confidence": 0.7300553959198637,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.6989560439560439,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_ranging",
+        "session_dead_zone",
+        "double_bottom",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783377917345_UP",
+        "1783376193093_UP",
+        "1783375753458_UP",
+        "1783377951149_UP",
+        "1783375818349_UP",
+        "1783377166368_UP",
+        "1783376707062_UP"
+      ],
+      "knnVote": {
+        "wins": 3,
+        "losses": 4,
+        "k": 7
+      },
+      "presetUsed": "AGGRESSIVE",
+      "winMargin": 0.15,
+      "reflectionNote": "Debate Winner BULL mungkin terpengaruh oleh News at Trade +0.30, sementara Math Signal UP hanya 73% confidence. Kombinasi ini menyebabkan overconfidence dalam arah UP."
+    },
+    {
+      "id": "1783378816624_UP",
+      "timestamp": 1783378816624,
+      "direction": "UP",
+      "session": "DEAD_ZONE",
+      "regime": "RANGING",
+      "mathSignal": {
+        "direction": "UP",
+        "confidence": 0.7850868072413368,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.6907142857142857,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_ranging",
+        "session_dead_zone",
+        "double_bottom",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783375818349_UP",
+        "1783375753458_UP",
+        "1783375315411_UP",
+        "1783376193093_UP",
+        "1783377917345_UP",
+        "1783378691950_UP",
+        "1783377951149_UP"
+      ],
+      "knnVote": {
+        "wins": 3,
+        "losses": 4,
+        "k": 7
+      },
+      "presetUsed": "NORMAL",
+      "winMargin": 0.15
+    },
+    {
+      "id": "1783378859997_UP",
+      "timestamp": 1783378859997,
+      "direction": "UP",
+      "session": "DEAD_ZONE",
+      "regime": "RANGING",
+      "mathSignal": {
+        "direction": "UP",
+        "confidence": 0.7623665237730217,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.6478571428571428,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_ranging",
+        "session_dead_zone",
+        "double_bottom",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783375818349_UP",
+        "1783375753458_UP",
+        "1783376193093_UP",
+        "1783375315411_UP",
+        "1783378691950_UP",
+        "1783377917345_UP",
+        "1783376593699_UP"
+      ],
+      "knnVote": {
+        "wins": 2,
+        "losses": 5,
+        "k": 7
+      },
+      "presetUsed": "NORMAL",
+      "winMargin": 0.15
+    },
+    {
+      "id": "1783379027112_UP",
+      "timestamp": 1783379027112,
+      "direction": "UP",
+      "session": "DEAD_ZONE",
+      "regime": "RANGING",
+      "mathSignal": {
+        "direction": "UP",
+        "confidence": 0.7383975090373159,
+        "voteScore": 0
+      },
+      "debateWinner": "BULL",
+      "newsScore": 0.3,
+      "confidence": 0.6907142857142857,
+      "rawJudgeConfidence": 0.73,
+      "patternTags": [
+        "regime_ranging",
+        "session_dead_zone",
+        "double_bottom",
+        "bb_squeeze",
+        "dir_up"
+      ],
+      "similarTradeIds": [
+        "1783375818349_UP",
+        "1783375753458_UP",
+        "1783376193093_UP",
+        "1783375315411_UP",
+        "1783378691950_UP",
+        "1783377917345_UP",
+        "1783377951149_UP"
+      ],
+      "knnVote": {
+        "wins": 3,
+        "losses": 4,
+        "k": 7
+      },
+      "presetUsed": "NORMAL",
+      "winMargin": 0.15
+    }
+  ],
+  "patternStats": {
+    "regime_weak_bull": {
+      "wins": 1,
+      "losses": 3,
+      "pending": 0,
+      "bayesianWR": 0.3333333333333333,
+      "recentOutcomes": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "emaWR": 0.38850312499999995,
+      "lastUpdated": 1783378507728,
+      "dominantRegime": "WEAK_BULL"
+    },
+    "session_dead_zone": {
+      "wins": 6,
+      "losses": 9,
+      "pending": 0,
+      "bayesianWR": 0.4117647058823529,
+      "recentOutcomes": [
+        0,
+        1,
+        1,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0
+      ],
+      "emaWR": 0.3454412553542535,
+      "lastUpdated": 1783378810757,
+      "dominantRegime": "WEAK_BULL"
+    },
+    "bb_squeeze": {
+      "wins": 6,
+      "losses": 9,
+      "pending": 0,
+      "bayesianWR": 0.4117647058823529,
+      "recentOutcomes": [
+        0,
+        1,
+        1,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0
+      ],
+      "emaWR": 0.3454412553542535,
+      "lastUpdated": 1783378810757,
+      "dominantRegime": "WEAK_BULL"
+    },
+    "ultra_compression": {
+      "wins": 1,
+      "losses": 1,
+      "pending": 0,
+      "bayesianWR": 0.5,
+      "recentOutcomes": [
+        0,
+        1
+      ],
+      "emaWR": 0.51125,
+      "lastUpdated": 1783029304583,
+      "dominantRegime": "WEAK_BULL"
+    },
+    "dir_up": {
+      "wins": 6,
+      "losses": 8,
+      "pending": 0,
+      "bayesianWR": 0.4375,
+      "recentOutcomes": [
+        0,
+        1,
+        1,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1,
+        0
+      ],
+      "emaWR": 0.40640147688735706,
+      "lastUpdated": 1783378810757,
+      "dominantRegime": "WEAK_BULL"
+    },
+    "regime_ranging": {
+      "wins": 2,
+      "losses": 1,
+      "pending": 0,
+      "bayesianWR": 0.6,
+      "recentOutcomes": [
+        1,
+        1,
+        0
+      ],
+      "emaWR": 0.5429375,
+      "lastUpdated": 1783378810757,
+      "dominantRegime": "RANGING"
+    },
+    "regime_strong_bull": {
+      "wins": 3,
+      "losses": 5,
+      "pending": 0,
+      "bayesianWR": 0.4,
+      "recentOutcomes": [
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        1
+      ],
+      "emaWR": 0.4311019968945312,
+      "lastUpdated": 1783378201400,
+      "dominantRegime": "STRONG_BULL"
+    },
+    "liquidity_sweep_bear": {
+      "wins": 0,
+      "losses": 1,
+      "pending": 0,
+      "bayesianWR": 0.3333333333333333,
+      "recentOutcomes": [
+        0
+      ],
+      "emaWR": 0.425,
+      "lastUpdated": 1783378507729,
+      "dominantRegime": "WEAK_BULL"
+    },
+    "bear_engulf": {
+      "wins": 0,
+      "losses": 1,
+      "pending": 0,
+      "bayesianWR": 0.3333333333333333,
+      "recentOutcomes": [
+        0
+      ],
+      "emaWR": 0.425,
+      "lastUpdated": 1783378507729,
+      "dominantRegime": "WEAK_BULL"
+    },
+    "dir_down": {
+      "wins": 0,
+      "losses": 1,
+      "pending": 0,
+      "bayesianWR": 0.3333333333333333,
+      "recentOutcomes": [
+        0
+      ],
+      "emaWR": 0.425,
+      "lastUpdated": 1783378507729,
+      "dominantRegime": "WEAK_BULL"
+    },
+    "double_bottom": {
+      "wins": 0,
+      "losses": 1,
+      "pending": 0,
+      "bayesianWR": 0.3333333333333333,
+      "recentOutcomes": [
+        0
+      ],
+      "emaWR": 0.425,
+      "lastUpdated": 1783378810757,
+      "dominantRegime": "RANGING"
+    }
+  },
+  "regimePatternStats": {
+    "WEAK_BULL": {
+      "regime_weak_bull": {
+        "wins": 1,
+        "losses": 4,
+        "pending": 0,
+        "bayesianWR": 0.2857142857142857,
+        "recentOutcomes": [
+          0
+        ],
+        "emaWR": 0.425,
+        "lastUpdated": 1783378507728,
+        "dominantRegime": "WEAK_BULL"
+      },
+      "session_dead_zone": {
+        "wins": 1,
+        "losses": 4,
+        "pending": 0,
+        "bayesianWR": 0.2857142857142857,
+        "recentOutcomes": [
+          0,
+          1
+        ],
+        "emaWR": 0.425,
+        "lastUpdated": 1783378507728,
+        "dominantRegime": "WEAK_BULL"
+      },
+      "bb_squeeze": {
+        "wins": 1,
+        "losses": 4,
+        "pending": 0,
+        "bayesianWR": 0.2857142857142857,
+        "recentOutcomes": [
+          0,
+          1
+        ],
+        "emaWR": 0.425,
+        "lastUpdated": 1783378507729,
+        "dominantRegime": "WEAK_BULL"
+      },
+      "ultra_compression": {
+        "wins": 0,
+        "losses": 2,
+        "pending": 0,
+        "bayesianWR": 0.25,
+        "recentOutcomes": [
+          0,
+          1
+        ],
+        "emaWR": 0.425,
+        "lastUpdated": 1783029004622,
+        "dominantRegime": "WEAK_BULL"
+      },
+      "dir_up": {
+        "wins": 1,
+        "losses": 3,
+        "pending": 0,
+        "bayesianWR": 0.3333333333333333,
+        "recentOutcomes": [
+          0,
+          1
+        ],
+        "emaWR": 0.425,
+        "lastUpdated": 1783377608933,
+        "dominantRegime": "WEAK_BULL"
+      },
+      "liquidity_sweep_bear": {
+        "wins": 0,
+        "losses": 2,
+        "pending": 0,
+        "bayesianWR": 0.25,
+        "recentOutcomes": [
+          0
+        ],
+        "emaWR": 0.425,
+        "lastUpdated": 1783378507729,
+        "dominantRegime": "WEAK_BULL"
+      },
+      "bear_engulf": {
+        "wins": 0,
+        "losses": 2,
+        "pending": 0,
+        "bayesianWR": 0.25,
+        "recentOutcomes": [
+          0
+        ],
+        "emaWR": 0.425,
+        "lastUpdated": 1783378507729,
+        "dominantRegime": "WEAK_BULL"
+      },
+      "dir_down": {
+        "wins": 0,
+        "losses": 2,
+        "pending": 0,
+        "bayesianWR": 0.25,
+        "recentOutcomes": [
+          0
+        ],
+        "emaWR": 0.425,
+        "lastUpdated": 1783378507729,
+        "dominantRegime": "WEAK_BULL"
+      }
+    },
+    "RANGING": {
+      "regime_ranging": {
+        "wins": 3,
+        "losses": 1,
+        "pending": 0,
+        "bayesianWR": 0.6666666666666666,
+        "recentOutcomes": [
+          1
+        ],
+        "emaWR": 0.575,
+        "lastUpdated": 1783378810757,
+        "dominantRegime": "RANGING"
+      },
+      "session_dead_zone": {
+        "wins": 3,
+        "losses": 2,
+        "pending": 0,
+        "bayesianWR": 0.5714285714285714,
+        "recentOutcomes": [
+          0,
+          1
+        ],
+        "emaWR": 0.51125,
+        "lastUpdated": 1783378810757,
+        "dominantRegime": "WEAK_BULL"
+      },
+      "bb_squeeze": {
+        "wins": 3,
+        "losses": 2,
+        "pending": 0,
+        "bayesianWR": 0.5714285714285714,
+        "recentOutcomes": [
+          0,
+          1
+        ],
+        "emaWR": 0.51125,
+        "lastUpdated": 1783378810757,
+        "dominantRegime": "WEAK_BULL"
+      },
+      "ultra_compression": {
+        "wins": 2,
+        "losses": 1,
+        "pending": 0,
+        "bayesianWR": 0.6,
+        "recentOutcomes": [
+          0,
+          1
+        ],
+        "emaWR": 0.51125,
+        "lastUpdated": 1783029304583,
+        "dominantRegime": "WEAK_BULL"
+      },
+      "dir_up": {
+        "wins": 3,
+        "losses": 2,
+        "pending": 0,
+        "bayesianWR": 0.5714285714285714,
+        "recentOutcomes": [
+          0,
+          1
+        ],
+        "emaWR": 0.51125,
+        "lastUpdated": 1783378810757,
+        "dominantRegime": "WEAK_BULL"
+      },
+      "double_bottom": {
+        "wins": 0,
+        "losses": 2,
+        "pending": 0,
+        "bayesianWR": 0.25,
+        "recentOutcomes": [
+          0
+        ],
+        "emaWR": 0.425,
+        "lastUpdated": 1783378810757,
+        "dominantRegime": "RANGING"
+      }
+    },
+    "STRONG_BULL": {
+      "regime_strong_bull": {
+        "wins": 3,
+        "losses": 6,
+        "pending": 0,
+        "bayesianWR": 0.36363636363636365,
+        "recentOutcomes": [
+          0
+        ],
+        "emaWR": 0.425,
+        "lastUpdated": 1783378201400,
+        "dominantRegime": "STRONG_BULL"
+      },
+      "session_dead_zone": {
+        "wins": 5,
+        "losses": 7,
+        "pending": 0,
+        "bayesianWR": 0.42857142857142855,
+        "recentOutcomes": [
+          0,
+          1,
+          1,
+          0
+        ],
+        "emaWR": 0.49687812499999995,
+        "lastUpdated": 1783378201400,
+        "dominantRegime": "WEAK_BULL"
+      },
+      "bb_squeeze": {
+        "wins": 5,
+        "losses": 7,
+        "pending": 0,
+        "bayesianWR": 0.42857142857142855,
+        "recentOutcomes": [
+          0,
+          1,
+          1,
+          0
+        ],
+        "emaWR": 0.49687812499999995,
+        "lastUpdated": 1783378201400,
+        "dominantRegime": "WEAK_BULL"
+      },
+      "dir_up": {
+        "wins": 5,
+        "losses": 7,
+        "pending": 0,
+        "bayesianWR": 0.42857142857142855,
+        "recentOutcomes": [
+          0,
+          1,
+          1,
+          0
+        ],
+        "emaWR": 0.49687812499999995,
+        "lastUpdated": 1783378201400,
+        "dominantRegime": "WEAK_BULL"
+      }
+    }
+  },
+  "sessionStats": {
+    "DEAD_ZONE_UP": {
+      "wins": 6,
+      "losses": 8
+    },
+    "DEAD_ZONE_DOWN": {
+      "wins": 0,
+      "losses": 1
+    }
+  },
+  "regimeStats": {
+    "WEAK_BULL": {
+      "wins": 1,
+      "losses": 3
+    },
+    "RANGING": {
+      "wins": 2,
+      "losses": 1
+    },
+    "STRONG_BULL": {
+      "wins": 3,
+      "losses": 5
+    }
+  },
+  "judgeCalibration": {
+    "buckets": {
+      "0.7": {
+        "totalPredicted": 15,
+        "totalWins": 6,
+        "avgPredictedConf": 0.7300000000000002
+      }
+    },
+    "ece": 0.3300000000000002,
+    "correctionFactor": 1,
+    "totalCalibrated": 15
+  },
+  "strategyBandit": {
+    "arms": {
+      "AGGRESSIVE": {
+        "name": "AGGRESSIVE",
+        "totalReward": 3,
+        "pulls": 6,
+        "ucbScore": 1.5647687357140292,
+        "lastUsed": 1783378810758
+      },
+      "NORMAL": {
+        "name": "NORMAL",
+        "totalReward": 2,
+        "pulls": 5,
+        "ucbScore": 1.5663957101536607,
+        "lastUsed": 1783378507729
+      },
+      "HYPER": {
+        "name": "HYPER",
+        "totalReward": 1,
+        "pulls": 4,
+        "ucbScore": 1.5540700482838634,
+        "lastUsed": 1783377922065
+      }
+    },
+    "totalPulls": 30,
+    "regimeArms": {
+      "WEAK_BULL": {
+        "AGGRESSIVE": {
+          "name": "AGGRESSIVE",
+          "totalReward": 0,
+          "pulls": 2,
+          "ucbScore": null,
+          "lastUsed": 0
+        },
+        "NORMAL": {
+          "name": "NORMAL",
+          "totalReward": 1,
+          "pulls": 2,
+          "ucbScore": null,
+          "lastUsed": 0
+        },
+        "HYPER": {
+          "name": "HYPER",
+          "totalReward": 0,
+          "pulls": 0,
+          "ucbScore": null,
+          "lastUsed": 0
+        }
+      },
+      "RANGING": {
+        "AGGRESSIVE": {
+          "name": "AGGRESSIVE",
+          "totalReward": 0,
+          "pulls": 1,
+          "ucbScore": null,
+          "lastUsed": 0
+        },
+        "NORMAL": {
+          "name": "NORMAL",
+          "totalReward": 1,
+          "pulls": 1,
+          "ucbScore": null,
+          "lastUsed": 0
+        },
+        "HYPER": {
+          "name": "HYPER",
+          "totalReward": 1,
+          "pulls": 1,
+          "ucbScore": null,
+          "lastUsed": 0
+        }
+      },
+      "STRONG_BULL": {
+        "AGGRESSIVE": {
+          "name": "AGGRESSIVE",
+          "totalReward": 3,
+          "pulls": 3,
+          "ucbScore": null,
+          "lastUsed": 0
+        },
+        "NORMAL": {
+          "name": "NORMAL",
+          "totalReward": 0,
+          "pulls": 2,
+          "ucbScore": null,
+          "lastUsed": 0
+        },
+        "HYPER": {
+          "name": "HYPER",
+          "totalReward": 0,
+          "pulls": 3,
+          "ucbScore": null,
+          "lastUsed": 0
+        }
+      }
+    }
+  },
+  "tradeVectors": [
+    {
+      "id": "1783028791581_UP",
+      "vector": [
+        0.49869156329105857,
+        0.3540945040947362,
+        0.8112063242997676,
+        0.20196245206667238,
+        0.52542543880892,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.5
+      ],
+      "direction": "UP",
+      "outcome": "LOSS",
+      "regime": "WEAK_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783028791581
+    },
+    {
+      "id": "1783029011398_UP",
+      "vector": [
+        0.5057219582254678,
+        0.3973990137014324,
+        0.9010806141250369,
+        0.13974517932462838,
+        0.5509119468094644,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.5
+      ],
+      "direction": "UP",
+      "outcome": "WIN",
+      "regime": "RANGING",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783029011398
+    },
+    {
+      "id": "1783029312380_UP",
+      "vector": [
+        0.5595939392282121,
+        0.6718487859300979,
+        0.7831519803251065,
+        0.23792939933884724,
+        0.48107823213296674,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.5
+      ],
+      "direction": "UP",
+      "outcome": "PENDING",
+      "regime": "RANGING",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783029312380
+    },
+    {
+      "id": "1783029543124_UP",
+      "vector": [
+        0.5812875590918243,
+        0.7315387781745353,
+        0.7831519803251065,
+        0.23792939933884724,
+        0.4811010222668572,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.5
+      ],
+      "direction": "UP",
+      "outcome": "WIN",
+      "regime": "RANGING",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783029543124
+    },
+    {
+      "id": "1783375157868_UP",
+      "vector": [
+        0.6549151120471395,
+        0.6531579474211492,
+        0.8124197903309073,
+        0.5838506177600272,
+        0.5924396939951361,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.5
+      ],
+      "direction": "UP",
+      "outcome": "PENDING",
+      "regime": "STRONG_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783375157868
+    },
+    {
+      "id": "1783375213667_UP",
+      "vector": [
+        0.7041631154902416,
+        0.679710005412317,
+        0.8162627710922452,
+        0.5882603322930922,
+        0.5864313097380174,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.5
+      ],
+      "direction": "UP",
+      "outcome": "PENDING",
+      "regime": "STRONG_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783375213667
+    },
+    {
+      "id": "1783375315411_UP",
+      "vector": [
+        0.6554882109919824,
+        0.6455267911963324,
+        0.8540985796205327,
+        0.5882603322930922,
+        0.5813170212055582,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.5
+      ],
+      "direction": "UP",
+      "outcome": "LOSS",
+      "regime": "STRONG_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783375315411
+    },
+    {
+      "id": "1783375509867_UP",
+      "vector": [
+        0.6189362283255097,
+        0.6086024514621344,
+        0.8960804217707375,
+        0.60032546498008,
+        0.5745481124923216,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.5
+      ],
+      "direction": "UP",
+      "outcome": "PENDING",
+      "regime": "STRONG_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783375509867
+    },
+    {
+      "id": "1783375753458_UP",
+      "vector": [
+        0.5971276539420745,
+        0.5895560291241042,
+        0.8560930541095204,
+        0.5933766031573529,
+        0.5744587768157335,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.5
+      ],
+      "direction": "UP",
+      "outcome": "LOSS",
+      "regime": "STRONG_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783375753458
+    },
+    {
+      "id": "1783375818349_UP",
+      "vector": [
+        0.6040636112477179,
+        0.5858422344204642,
+        0.8439228256780806,
+        0.6619352276848208,
+        0.45368739582560913,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.4375
+      ],
+      "direction": "UP",
+      "outcome": "WIN",
+      "regime": "STRONG_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783375818349
+    },
+    {
+      "id": "1783376109435_UP",
+      "vector": [
+        0.6170772356466317,
+        0.5903076500699302,
+        0.8243508375562557,
+        0.6974005187854788,
+        0.43000612202440097,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.5
+      ],
+      "direction": "UP",
+      "outcome": "PENDING",
+      "regime": "STRONG_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783376109435
+    },
+    {
+      "id": "1783376167785_UP",
+      "vector": [
+        0.6133825007015785,
+        0.5872698721046583,
+        0.742935034310015,
+        0.6974005187854788,
+        0.42999814727702473,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.5
+      ],
+      "direction": "UP",
+      "outcome": "PENDING",
+      "regime": "STRONG_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783376167786
+    },
+    {
+      "id": "1783376193093_UP",
+      "vector": [
+        0.607175784459567,
+        0.582064334780847,
+        0.7870809916078649,
+        0.6974005187854788,
+        0.42994751153624056,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.5
+      ],
+      "direction": "UP",
+      "outcome": "WIN",
+      "regime": "STRONG_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783376193094
+    },
+    {
+      "id": "1783376415565_UP",
+      "vector": [
+        0.6077451529120793,
+        0.573742442900558,
+        0.6915677189505325,
+        0.8159841070711341,
+        0.3602228667549218,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.5446428571428571
+      ],
+      "direction": "UP",
+      "outcome": "PENDING",
+      "regime": "STRONG_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783376415565
+    },
+    {
+      "id": "1783376593699_UP",
+      "vector": [
+        0.5829239642630744,
+        0.5516175723217797,
+        0.7264428881165987,
+        0.8117211277876276,
+        0.35927027193351646,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.5446428571428571
+      ],
+      "direction": "UP",
+      "outcome": "LOSS",
+      "regime": "STRONG_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783376593699
+    },
+    {
+      "id": "1783376707062_UP",
+      "vector": [
+        0.5496146558277877,
+        0.34587844454269373,
+        0.6104311800222113,
+        0.8016415786023126,
+        0.5539751501758585,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.5
+      ],
+      "direction": "UP",
+      "outcome": "LOSS",
+      "regime": "STRONG_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783376707062
+    },
+    {
+      "id": "1783377145933_UP",
+      "vector": [
+        0.48197874929254875,
+        0.3210159992667859,
+        0.738699109022891,
+        0.7746504430547793,
+        0.6134835367343784,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.4652777777777778
+      ],
+      "direction": "UP",
+      "outcome": "PENDING",
+      "regime": "WEAK_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783377145933
+    },
+    {
+      "id": "1783377166368_UP",
+      "vector": [
+        0.48197874929254875,
+        0.3210159992667859,
+        0.738699109022891,
+        0.7746504430547793,
+        0.6134835367343784,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.4652777777777778
+      ],
+      "direction": "UP",
+      "outcome": "LOSS",
+      "regime": "WEAK_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783377166368
+    },
+    {
+      "id": "1783377315193_UP",
+      "vector": [
+        0.4774617223614816,
+        0.3477362844274862,
+        0.9254609080124355,
+        0.7499400291016058,
+        0.656497850247066,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.4375
+      ],
+      "direction": "UP",
+      "outcome": "WIN",
+      "regime": "WEAK_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783377315193
+    },
+    {
+      "id": "1783377617195_UP",
+      "vector": [
+        0.49469507884627695,
+        0.4002210634206398,
+        0.9349310051701807,
+        0.7148806225275445,
+        0.6074646217603142,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.4715909090909091
+      ],
+      "direction": "UP",
+      "outcome": "PENDING",
+      "regime": "STRONG_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783377617195
+    },
+    {
+      "id": "1783377917345_UP",
+      "vector": [
+        0.47334443406767834,
+        0.4079826354442346,
+        0.8385626586057514,
+        0.6769774497186398,
+        0.6149572795125299,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.4715909090909091
+      ],
+      "direction": "UP",
+      "outcome": "LOSS",
+      "regime": "STRONG_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783377917345
+    },
+    {
+      "id": "1783377922942_UP",
+      "vector": [
+        0.47334443406767834,
+        0.4079826354442346,
+        0.8385626586057514,
+        0.6769774497186398,
+        0.6149572795125299,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.4715909090909091
+      ],
+      "direction": "UP",
+      "outcome": "PENDING",
+      "regime": "STRONG_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783377922942
+    },
+    {
+      "id": "1783377951149_UP",
+      "vector": [
+        0.4503202272428012,
+        0.3747929713120307,
+        0.8385626586057514,
+        0.6769774497186399,
+        0.6145686364088855,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.4439585200733415
+      ],
+      "direction": "UP",
+      "outcome": "WIN",
+      "regime": "STRONG_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783377951149
+    },
+    {
+      "id": "1783378207777_UP",
+      "vector": [
+        0.5598259600896864,
+        0.5706213805052149,
+        0.8481583072100339,
+        0.6297097823410225,
+        0.6192528652538242,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.46282169099048237
+      ],
+      "direction": "UP",
+      "outcome": "PENDING",
+      "regime": "STRONG_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783378207777
+    },
+    {
+      "id": "1783378483972_DOWN",
+      "vector": [
+        0.4991155599673896,
+        0.369448105547422,
+        0.7769482240003316,
+        0.6299966664956099,
+        0.616320414609643,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.5
+      ],
+      "direction": "DOWN",
+      "outcome": "LOSS",
+      "regime": "WEAK_BULL",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783378483972
+    },
+    {
+      "id": "1783378513532_UP",
+      "vector": [
+        0.49179904430165644,
+        0.4367616544353753,
+        0.7964714356754055,
+        0.616276620718877,
+        0.5075210227772656,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.4759615384615385
+      ],
+      "direction": "UP",
+      "outcome": "PENDING",
+      "regime": "RANGING",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783378513532
+    },
+    {
+      "id": "1783378691950_UP",
+      "vector": [
+        0.4956213000741369,
+        0.4486644465697503,
+        0.6829591517809511,
+        0.616276620718877,
+        0.5075722226749868,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.4759615384615385
+      ],
+      "direction": "UP",
+      "outcome": "LOSS",
+      "regime": "RANGING",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783378691950
+    },
+    {
+      "id": "1783378816624_UP",
+      "vector": [
+        0.5439979603338972,
+        0.6145308643018762,
+        0.9483131284653715,
+        0.6299669710806794,
+        0.5016412650472852,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.4553571428571429
+      ],
+      "direction": "UP",
+      "outcome": "PENDING",
+      "regime": "RANGING",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783378816624
+    },
+    {
+      "id": "1783378859997_UP",
+      "vector": [
+        0.5375243804931815,
+        0.5912887951234231,
+        0.7937154273159299,
+        0.6301861292548516,
+        0.5018054864009068,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.4553571428571429
+      ],
+      "direction": "UP",
+      "outcome": "PENDING",
+      "regime": "RANGING",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783378859997
+    },
+    {
+      "id": "1783379027112_UP",
+      "vector": [
+        0.5656071912944667,
+        0.530805397744425,
+        0.8310367458110857,
+        0.6347510454470869,
+        0.499904392685028,
+        1,
+        0,
+        0,
+        0,
+        0.5,
+        0.65,
+        0.4553571428571429
+      ],
+      "direction": "UP",
+      "outcome": "PENDING",
+      "regime": "RANGING",
+      "session": "DEAD_ZONE",
+      "timestamp": 1783379027112
+    }
+  ],
+  "recentReflections": [
+    "[2026-07-06T22:15:02.580Z] Trade berhasil karena kombinasi regime STRONG_BULL dan BB Squeeze memberikan sinyal kuat, meskipun KNN kurang akurat.",
+    "[2026-07-06T22:20:09.786Z] Sinyal Math dan Debate Winner sangat andal dalam trade ini, dengan Math Signal mencapai 56.9% dan Debate Winner mendukung arah UP.",
+    "[2026-07-06T22:25:02.040Z] Kombinasi BWR tinggi pada bb_squeeze dan dir_up mungkin terlalu optimis untuk STRONG_BULL, sementara DEAD_ZONE seringkali volatil.",
+    "[2026-07-06T22:30:02.122Z] Kombinasi bayesian WR tinggi untuk semua pattern (38-45%) membuat sistem terlalu agresif, sementara KNN vote (3W/4L) menunjukkan overfitting.",
+    "[2026-07-06T22:35:10.258Z] Kombinasi pattern bb_squeeze dan dir_up mungkin terlalu agresif untuk regime WEAK_BULL, sementara KNN vote (2W/5L) menunjukkan overfitting.",
+    "[2026-07-06T22:40:10.524Z] Trade berhasil karena kombinasi BULL debate dan news positif, meskipun math signal HOLD. Kombinasi pattern dir_up dan bb_squeeze menjadi kunci kemenangan.",
+    "[2026-07-06T22:45:23.258Z] Kombinasi BWR tinggi pada bb_squeeze dan dir_up mungkin terlalu optimis untuk STRONG_BULL, sementara KNN vote lemah (3W/4L) menunjukkan overfitting.",
+    "[2026-07-06T22:50:02.609Z] Sinyal terandalkan adalah regime_strong_bull dan bb_squeeze, dengan BWR tinggi dan konsistensi dalam prediksi arah UP.",
+    "[2026-07-06T22:55:09.025Z] Kombinasi pattern bb_squeeze dan dir_down mungkin terlalu agresif untuk regime WEAK_BULL, sementara news impact +0.30 tidak cukup untuk membalikkan trend.",
+    "[2026-07-06T23:00:12.013Z] Debate Winner BULL mungkin terpengaruh oleh News at Trade +0.30, sementara Math Signal UP hanya 73% confidence. Kombinasi ini menyebabkan overconfidence dalam arah UP."
+  ],
+  "adaptiveNotes": [
+    "[2026-07-06T22:15:09.435Z] Perhatikan potensi pullback sementara pada level RSI 61.7 dan ZScore 0.72 untuk mengatur posisi dengan stop-loss yang ketat.",
+    "[2026-07-06T22:16:07.785Z] Perhatikan potensi pullback sementara jika RSI melebihi 70 atau ZScore mendekati 1.0.",
+    "[2026-07-06T22:16:33.092Z] Perhatikan potensi koreksi sementara setelah breakout, dengan target pertama di EMA9 (64329.1)",
+    "[2026-07-06T22:20:15.563Z] Perhatikan potensi pullback sementara sebelum melanjutkan naik, dengan target EMA21/50 sebagai level dukungan.",
+    "[2026-07-06T22:23:13.698Z] Perhatikan potensi pullback pada level konsolidasi, namun tetap konsisten dengan tren bullish.",
+    "[2026-07-06T22:25:07.061Z] Perhatikan potensi pullback sebelum breakout yang jelas, dan jangan terlalu agresif saat EMA9 belum membentuk breakout dari EMA21.",
+    "[2026-07-06T22:32:25.933Z] Perhatikan potensi koreksi pada RSI 50+ untuk menyesuaikan posisi",
+    "[2026-07-06T22:32:46.368Z] Perhatikan potensi koreksi jika RSI melewati 50, dan pastikan EMA9 tetap di atas EMA21/EMA50 untuk mempertahankan momentum.",
+    "[2026-07-06T22:35:15.193Z] Perhatikan potensi reversi jika Hurst 0.656 menyebabkan koreksi mendadak, terutama dengan BBSqueeze aktif.",
+    "[2026-07-06T22:40:17.195Z] Perhatikan potensi pullback ke EMA21 jika BBSqueeze tetap aktif, tetapi tetap jaga posisi dengan stop-loss di bawah EMA21.",
+    "[2026-07-06T22:45:17.344Z] Perhatikan potensi reversi jika BBSqueeze berlanjut lebih dari 2 jam tanpa breakout.",
+    "[2026-07-06T22:45:22.942Z] Perhatikan potensi pullback mendekati EMA50 (63996.5) sebagai titik pengujian, dan jaga posisi dengan stop-loss di bawah EMA21.",
+    "[2026-07-06T22:45:51.148Z] Perhatikan potensi pullback setelah breakout, dengan EMA9 di atas EMA21 sebagai level dukungan.",
+    "[2026-07-06T22:50:07.776Z] Perhatikan potensi reversi jika RSI melewati 70 atau OFI menjadi net negatif.",
+    "[2026-07-06T22:54:43.971Z] Perhatikan breakout kuat untuk mengonfirmasi tren bullish, atau tekanan penjualan yang lebih kuat untuk mengonfirmasi tren bearish.",
+    "[2026-07-06T22:55:13.531Z] Perhatikan EMA9/EMA21 untuk potensi breakout, dan siapkan stop-loss di bawah EMA21 jika momentum mulai melemah.",
+    "[2026-07-06T22:58:11.948Z] Perhatikan potensi koreksi jika RSI mendekati 50-70 atau jika EMA9 turun di bawah EMA21.",
+    "[2026-07-06T23:00:16.623Z] Perhatikan potensi pullback setelah breakout, dengan threshold HOLD di 0.53 jika momentum melemah.",
+    "[2026-07-06T23:00:59.996Z] Perhatikan potensi pullback terkontrol jika harga mendekati level resistansi, namun tetap jaga posisi dengan stop-loss di bawah EMA21.",
+    "[2026-07-06T23:03:47.111Z] Perhatikan potensi koreksi jika RSI melewati 60 dan ZScore naik di atas 0.5."
+  ],
+  "regimeThresholds": {},
+  "miningInsights": [
+    "[2026-07-06T22:35:12.393Z] Kombinasi STRONG_BULL + DEAD_ZONE + bb_squeeze + dir_up paling unggul dengan 4W/4L, sementara WEAK_BULL sering gagal. KNN bermanfaat namun perlu lebih banyak data untuk meningkatkan akurasi."
+  ],
+  "lastMiningAt": 18
+}
